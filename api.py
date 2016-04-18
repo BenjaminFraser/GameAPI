@@ -10,6 +10,16 @@ from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
     ScoreForms, GameForms, UserForm, UserForms
 from utils import get_by_urlsafe, check_winner, check_full
 
+# Fields for conference query options.
+SHIP_TYPES =    [
+            'aircraft carrier',
+            'battleship',
+            'submarine',
+            'destroyer',
+            'patrol boat'
+            ]
+
+
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 GET_GAME_REQUEST = endpoints.ResourceContainer(
         urlsafe_game_key=messages.StringField(1),)
@@ -83,7 +93,7 @@ class BattleshipsAPI(remote.Service):
             # a dictionary with array values containing starting row, col and orientation.
             # best course of action - create a _formatShipInsert helper function to validate 
             # and create the dictionary Python objects.
-            request.
+            ship_data = self._formatShipInserts(request.ships)
         else:
             raise endpoints.NotFoundException('Game not found!')
 
@@ -92,111 +102,149 @@ class BattleshipsAPI(remote.Service):
 
     def _formatShipInserts(self, ships):
         """Parse, check validity and format ship insert data into an appropriate dict"""
-        formatted_ships = []
+        formatted_ships = {}
 
         for ship in ships:
+            # create a dict containing all the input ship data for the ship.
             ship_data = {field.name: getattr(ship, field.name) for field in ship.all_fields()}
+
+            # ensure the ship type entered is of a valid type.
+            ship_type = ship_data['ship_type'].lower()
+            if ship_type not in SHIP_TYPES:
+                raise ValueError("Please enter a valid ship type. '{0}' is not valid! "
+                                "A ship can be one of either: aircraft carrier, battleship, "
+                                 "submarine, destroyer or a patrol boat!".format(ship_type))
+
+            start_row, start_col = int(ship_data['start_row']), int(ship_data['start_col'])
+            if ship_data['orientation'].lower().startswith('h'):
+                vertical = False
+            else: 
+                # default to vertical orientation if horizontal not given.
+                vertical = True
+
+
+            # check the validity of the given ship data. Raise exception if unacceptable.
+            check_ship, msg = self._shipInsertPosnValid(ship_type, start_row, 
+                                                        start_col, vertical)
+            if check_ship:
+                formatted_ships[ship_type] = [start_row, start_col, vertical]
+                # process the ship using the created class method for insertion of a ship.
+            else:
+                raise ValueError("There was a problem with a ship insert. {0}".format(msg))
+
+        return formatted_ships
 
         # ensure that the ship insert data is within limits for each ship type and start locations.
         # create a helper function _shipInsertPosnValid(self, ship_type, start_row, start_col, orientation)
 
     def _shipInsertPosnValid(self, ship_type, first_row_int, first_col_int, vertical=True):
-        """Checks the validatity of the ships starting co-ordinates and characteristics"""
+        """Checks the validatity of the ships starting co-ordinates and characteristics.
+           returns a tuple, consisting of a retval and a message. 
+                 - The retval is equal to True if the data is valid, and false if not.
+                 - The message gives an indication as to the problem is retal is false.
+        """
         if ship_type == 'aircraft carrier':
             if vertical == True: 
                 # verify that the ship will fit into the battle grid based on input.
                 if int(first_row_int) < 5:
-                        print "Creating and inserting an aircraft carrier."
-                        self.place_ship(5, int(first_row_int), int(first_col_int), vertical)
-                        self.ships['Aircraft Carrier'] += 1
-                        return
-                # if not raise ValueError for out of bounds input location.
+                        retval, message = True, None
+                        return True, message
+                # if not set retval false and message for out of bounds input location.
                 else: 
-                        raise ValueError("The ships first row location must be below 5 to fit!")
-        elif vertical == False:
-            # verify that horizontal location is within the grid limits.
-            if int(first_col_int) < 5:
-                # place ship using place_ship() and add to self.ships dict value.
-                self.place_ship(5, int(first_row_int), int(first_col_int), vertical=False)
-                self.ships['Aircraft Carrier'] += 1
-                return
-            # if not raise ValueError for out of bounds input horizontal location.
+                        retval = False
+                        message = "Aircraft carrier is size 5 and cannot fit there!"
+                        return False, message
+            elif vertical == False:
+                # verify that horizontal location is within the grid limits.
+                if int(first_col_int) < 5:
+                    retval, message = True, None
+                    return True, message
+                # if not raise ValueError for out of bounds input horizontal location.
+                else:
+                    retval = False
+                    message = "Aircraft carrier is size 5 and cannot fit there!")
+                    return retval, message
             else:
-                raise ValueError("The ships first column location must be below 5 to fit!")
-        else:
-            # raise exception for incorrect vertical keyword if not true or false.
-            raise ValueError("The 'vertical' keyword must be True or False!")
+                # raise exception for incorrect vertical keyword if not true or false.
+                raise ValueError("The 'vertical' keyword must be True or False!")
                 
         elif ship_type == 'battleship':
             if vertical == True: 
                 if int(first_row_int) < 6:
-                    self.place_ship(4, int(first_row_int), int(first_col_int), vertical)
-                    self.ships['Battleship'] += 1
-                    return
-                else: 
-                    raise ValueError("The ships first row location must be below 6 to fit!")
+                    retval, message = True, None
+                    return True, message
+                else:
+                    retval = False
+                    message = "The battleships first row must be below 6 to fit vertically!"
+                    return retval, message
             elif vertical == False:
                 if int(first_col_int) < 6:
-                    self.place_ship(4, int(first_row_int), int(first_col_int), vertical=False)
-                    self.ships['Battleship'] += 1
-                    return
+                    retval, message = True, None
+                    return True, message
                 else:
-                    raise ValueError("The ships first column location must be below 6 to fit!")
+                    retval = False
+                    message = "The battleships first column must be below 6 to fit horizontally!"
+                    return retval, message
             else:
                 raise ValueError("The 'vertical' keyword must be True or False!")
                     
         elif ship_type == 'submarine':
             if vertical == True: 
                 if int(first_row_int) < 7:
-                    self.place_ship(3, int(first_row_int), int(first_col_int), vertical)
-                    self.ships['Submarine'] += 1
-                    return
-                else: 
-                    raise ValueError("The ships first row location must be below 7 to fit!")                    
+                    retval, message = True, None
+                    return True, message
+                else:
+                    retval = False
+                    message = "The submarines first row must be below 7 to fit vertically!" 
+                    return retval, message                
             elif vertical == False:
                 if int(first_col_int) < 7:
-                    self.place_ship(3, int(first_row_int), int(first_col_int), vertical=False)
-                    self.ships['Submarine'] += 1
-                    return
+                    retval, message = True, None
+                    return True, message
                 else:
-                    raise ValueError("The ships first column location must be below 7 to fit!")
-                        
+                    retval = False
+                    message = "The submarines first column must be below 7 to fit horizontally!"
+                    return retval, message    
             else:
                 raise ValueError("The 'vertical' keyword must be True or False!")
                     
         elif ship_type == 'destroyer':
             if vertical == True: 
                 if int(first_row_int) < 7:
-                    self.place_ship(3, int(first_row_int), int(first_col_int), vertical)
-                    self.ships['Destroyer'] += 1
-                    return
+                    retval, message = True, None
+                    return True, message
                 else: 
-                    raise ValueError("The ships first row location must be below 7 to fit!")                    
+                    retval = False
+                    message = "The destroyers first row must be below 7 to fit vertically!" 
+                    return retval, message                  
             elif vertical == False:
                 if int(first_col_int) < 7:
-                    self.place_ship(3, int(first_row_int), int(first_col_int), vertical=False)
-                    self.ships['Destroyer'] += 1
-                    return
+                    retval, message = True, None
+                    return True, message
                 else:
-                    raise ValueError("The ships first column location must be below 7 to fit!")
+                    retval = False
+                    message = "The destroyers first column must be below 7 to fit horizontally!"
+                    return retval, message
             else:
                 raise ValueError("The 'vertical' keyword must be True or False!")
                     
         elif ship_type == 'patrol boat':
             if vertical == True: 
                 if int(first_row_int) < 8:
-                    self.place_ship(2, int(first_row_int), int(first_col_int), vertical)
-                    self.ships['Patrol boat'] += 1
-                    return
-                else: 
-                    raise ValueError("The ships first row location must be below 8 to fit!")                    
+                    retval, message = True, None
+                    return True, message
+                else:
+                    retval = False
+                    message = "The patrol boats first row must be below 8 to fit vertically!"
+                    return retval, message                   
             elif vertical == False:
                 if int(first_col_int) < 8:
-                    self.place_ship(2, int(first_row_int), int(first_col_int), vertical=False)
-                    self.ships['Patrol boat'] += 1
-                    return
+                    retval, message = True, None
+                    return True, message
                 else:
-                    raise ValueError("The ships first column location must be below 8 to fit!")
+                    retval = False
+                    message = "The patrol boats first column must be below 8 to fit horizontally!"
+                    return retval, message
             else:
                 raise ValueError("The 'vertical' keyword must be True or False!")
                 

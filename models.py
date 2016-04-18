@@ -151,12 +151,12 @@ class InsertShipsForm(messages.Message):
     """Used to insert ships into a users grid prior to starting"""
     ship_type = messages.StringField(1, required=True)
     start_row = messages.IntegerField(2, required=True)
-    start column = messages.IntegerField(3, required=True)
+    start_column = messages.IntegerField(3, required=True)
     orientation = messages.StringField(4, required=True)
 
 class InsertShipsForms(messages.Message):
     """Used for multiple insertships forms during ship insert"""
-    items = messages.MessageField(InsertShipsForm, 1, repeated=True)
+    ships = messages.MessageField(InsertShipsForm, 1, repeated=True)
 
 class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
