@@ -21,14 +21,18 @@ SHIP_TYPES =    [
 
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
+
 GET_GAME_REQUEST = endpoints.ResourceContainer(
         urlsafe_game_key=messages.StringField(1),)
+
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     MakeMoveForm,
     urlsafe_game_key=messages.StringField(1),)
+
 INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
     InsertShipsForms,
     urlsafe_game_key=messages.StringField(1),)
+
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
 
@@ -81,7 +85,7 @@ class BattleshipsAPI(remote.Service):
 
 
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
-                      response_message=GameForm,
+                      response_message=StringMessage,
                       path='game{urlsafe_game_key}/user_1_ships',
                       name='user_1_ships',
                       http_method='POST')
@@ -91,14 +95,38 @@ class BattleshipsAPI(remote.Service):
         if game:
             # retrieve multiple ship insert forms and format the data into
             # a dictionary with array values containing starting row, col and orientation.
-            # best course of action - create a _formatShipInsert helper function to validate 
-            # and create the dictionary Python objects.
-            ship_data = self._formatShipInserts(request.ships)
+            # ensure ships have not already been inserted.
+            if game.total_ship_cells(grid=1) == 0:
+                # uses _formatShipInsert helper function to validate 
+                # and create the dictionary Python objects.
+                ship_data = self._formatShipInserts(request.ships)
+                game.insert_user_1_ships(ship_data)
+                return StringMessage(message='Player 1 ships successfully added to grid.')
+            else:
+                raise endpoints.BadRequestException('Player 1 has already inserted ships!')
         else:
             raise endpoints.NotFoundException('Game not found!')
 
-
-        return game.to_form()
+    @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
+                      response_message=StringMessage,
+                      path='game{urlsafe_game_key}/user_2_ships',
+                      name='user_2_ships',
+                      http_method='POST')
+    def insert_user_2_ships(self, request):
+        """Inserts user 2 ships into the Game grid 2"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        if game:
+            # retrieve multiple ship insert forms and format the data into
+            # a dictionary with array values containing starting row, col and orientation.
+            # ensure ships have not already been inserted.
+            if game.total_ship_cells(grid=2) == 0:
+                ship_data = self._formatShipInserts(request.ships)
+                game.insert_user_2_ships(ship_data)
+                return StringMessage(message='Player 2 ships successfully added to grid.')
+            else:
+                raise endpoints.BadRequestException('Player 2 has already inserted ships!')
+        else:
+            raise endpoints.NotFoundException('Game not found!')
 
     def _formatShipInserts(self, ships):
         """Parse, check validity and format ship insert data into an appropriate dict"""
@@ -116,14 +144,14 @@ class BattleshipsAPI(remote.Service):
                                  "submarine, destroyer or a patrol boat!".format(ship_type))
 
             start_row, start_col = int(ship_data['start_row']), int(ship_data['start_col'])
+
             if ship_data['orientation'].lower().startswith('h'):
                 vertical = False
             else: 
                 # default to vertical orientation if horizontal not given.
                 vertical = True
 
-
-            # check the validity of the given ship data. Raise exception if unacceptable.
+            # check the validity of the given ship data using _shipInsertPosnValid helper.
             check_ship, msg = self._shipInsertPosnValid(ship_type, start_row, 
                                                         start_col, vertical)
             if check_ship:
@@ -249,28 +277,11 @@ class BattleshipsAPI(remote.Service):
                 raise ValueError("The 'vertical' keyword must be True or False!")
                 
         else:
+            retval = False
             message = ("The input ship type {0} is not valid! Please use either "
                         "'aircraft carrier', 'battleship', 'submarine', 'destroyer' or "
                         "'patrol boat'!".format(ship_type))
-            return message
-
-
-    @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
-                      response_message=GameForm,
-                      path='game{urlsafe_game_key}/user_2_ships',
-                      name='user_2_ships',
-                      http_method='POST')
-    def insert_user_2_ships(self, request):
-        """Inserts user 2 ships into the Game grid 2"""
-        user_1 = User.query(User.name == request.user_1).get()
-        user_2 = User.query(User.name == request.user_2).get()
-        if not user_1 and user_2:
-            raise endpoints.NotFoundException(
-                    'One of users with that name does not exist!')
-
-        game = Game.new_game(user_1.key, user_2.key)
-
-        return game.to_form()
+            return retval, message
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
