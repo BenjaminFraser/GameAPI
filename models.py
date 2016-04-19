@@ -72,15 +72,154 @@ class Game(ndb.Model):
         game.put()
         return game
 
+    def total_ships(self, grid=1):
+        """Return the total number of ships on the selected BattleGrid instance."""
+        if grid is 1:
+            return sum(self.ships_1.values())
+        else:
+            return sum(self.ships_2.values())
+
+    def total_ship_cells(self):
+        """Returns the number of cells still intact with '+'"""
+        ship_count = 0
+        for row in self.board:
+            ship_count += row.count('+')
+        return ship_count
+
+    def total_destroyed_cells(self):
+        """Returns the total number of cells that are destroyed ('X')"""
+        destroy_count = 0 
+        for row in self.board:
+            destroy_count += row.count('X')
+        return destroy_count
+
+    def destroyed_locations(self):
+        """Returns the locations of cells that are destroyed as a sequence
+            of tuples containing their locations in the format:
+            (row_number, column_number)
+        """
+        row_loc, col_loc = [], []
+        for row_num, row in enumerate(self.board):
+            for col_num, i in enumerate(row):
+                if i == 'X':
+                    # print "found an 'X' at location: row {0}, col {1}".format(row_num, col_num)
+                    row_loc.append(row_num)
+                    col_loc.append(col_num)
+        locations = [list(x) for x in zip(row_loc, col_loc)]
+        return locations
+
     def insert_user_1_ships(self, ships_dict_array):
         """Places user 1's ships throughout grid 1 within the
            selected cell co-ordinates and orientation (vert or horizontal).
            ships_array must be a dictionary with array values, providing the ships row,
            column and its orientation, in the format like the following example:
-           ships_dict_array = {'Aircraft Carrier' : [2, 3, 'vertical']
-                               'Battleship' : [4, 5, 'horizontal']}
+           ships_dict_array = {'Aircraft Carrier' : [2, 3, 'vertical=True']
+                               'Battleship' : [4, 5, 'False']}
+           The relevant data is passed forward into the place_ship function.
         """
+        for ship, data in ships_dict_array:
+            if ship is 'aircraft carrier':
+                self.place_ship(5, data[0], data[1], vertical=data[2])
+                self.ships_1['Aircraft Carrier'] += 1
+            elif ship is 'battleship':
+                self.place_ship(4, data[0], data[1], vertical=data[2])
+                self.ships_1['Battleship'] += 1
+            elif ship is 'submarine':
+                self.place_ship(3, data[0], data[1], vertical=data[2])
+                self.ships_1['Submarine'] += 1
+            elif ship is 'destroyer':
+                self.place_ship(3, data[0], data[1], vertical=data[2])
+                self.ships_1['Destroyer'] += 1
+            elif ship is 'patrol boat':
+                self.place_ship(2, data[0], data[1], vertical=data[2])
+                self.ships_1['Patrol boat'] += 1
+            else:
+                raise ValueError("The dict key does not match any ship types.")
 
+    def place_ship(self, size, first_row_int, first_col_int, vertical=True, grid=1):
+        """Places a ship of chosen size into the grid at the chosen co-ordinates,
+        by default, the ship is placed vertically, with the given co-ords
+        being the uppermost cell.
+        If vertical=False, the ship is placed horizontally, starting from the
+        left-most co-ordinates.
+        """
+        if vertical == True:
+            for row in range(first_row_int, first_row_int+size):
+                self.update_cell(row, first_col_int, grid=grid)
+                return
+                                
+        if vertical == False:
+            for col in range(first_col_int, first_col_int+size):
+                self.update_cell(first_row_int, col, grid=grid)
+                return
+
+    def update_cell(self, row_int, col_int, status="ship", grid=1):
+        """Update a cell at the chosen co-ordinates on the grid,
+        Status may be: - "ship" (places a '+' on the cell)
+                       - "destroy" (places an 'X' on the cell)
+        """
+        if grid == 1:
+            if status == "ship":
+                self.grid_1[row_int][col_int] = '+'
+                return
+            elif status == "destroy":
+                # ensure the selected cell is not already destroyed, and update to 'X'
+                if self.return_grid_status(row_int, col_int) != 'X':
+                    self.grid_1[row_int][col_int] = 'X'
+                    return
+                # if the cell is already destroyed, raise ValueError notifying the user.
+                else:
+                    raise ValueError("The selected grid cell is already destroyed!")
+            else:
+                raise ValueError("The status argument must be either 'ship' or 'destroy'.")
+
+        elif grid == 2:
+            if status == "ship":
+                self.grid_2[row_int][col_int] = '+'
+                return
+            elif status == "destroy":
+                # ensure the selected cell is not already destroyed, and update to 'X'
+                if self.return_grid_status(row_int, col_int) != 'X':
+                    self.grid_2[row_int][col_int] = 'X'
+                    return
+                # if the cell is already destroyed, raise ValueError notifying the user.
+                else:
+                    raise ValueError("The selected grid cell is already destroyed!")
+            else:
+                raise ValueError("The status argument must be either 'ship' or 'destroy'.")
+
+        else:
+            raise ValueError("The selected grid must be either 1 or 2!")
+
+    def destroy_cell(self, row_int, col_int, grid=1):
+        """Destroys a selected grid cell, by inserting an "X".
+        Returns True if a ship was present at the selected cell.
+        """
+        retval = False
+        status = self.return_grid_status(row_int, col_int, grid=grid)
+        if status == '+':
+            retval = True
+            self.update_cell(row_int, col_int, status="destroy", grid=grid)
+            return retval
+
+        if status == '-':
+            self.update_cell(row_int, col_int, status="destroy", grid=grid)
+            return retval
+
+        # raise exception if grid cell is already destroyed.
+        if status == 'X':
+            raise ValueError('The chosen cell is already destroyed!')
+
+    def return_grid_status(self, row_int, col_int, grid=1):
+        """Return the status of a chosen grid cell,
+        Returns: '-' for unoccupied,
+        '+' for occupied by a ship,
+        'x' for a destroyed cell.
+        """
+        if grid is 1:
+            return self.grid_1[row_int][col_int]
+        else:
+            return self.grid_2[row_int][col_int]
 
     def to_form(self):
         """Returns a GameForm representation of the Game"""
