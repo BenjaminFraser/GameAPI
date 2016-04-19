@@ -79,11 +79,15 @@ class Game(ndb.Model):
         else:
             return sum(self.ships_2.values())
 
-    def total_ship_cells(self):
+    def total_ship_cells(self, grid=1):
         """Returns the number of cells still intact with '+'"""
         ship_count = 0
-        for row in self.board:
-            ship_count += row.count('+')
+        if grid is 1:
+            for row in self.grid_1:
+                ship_count += row.count('+')
+        else:
+            for row in self.grid_2:
+                ship_count += row.count('+')
         return ship_count
 
     def total_destroyed_cells(self):
@@ -132,6 +136,34 @@ class Game(ndb.Model):
                 self.ships_1['Destroyer'] += 1
             elif ship is 'patrol boat':
                 self.place_ship(2, data[0], data[1], vertical=data[2])
+                self.ships_1['Patrol boat'] += 1
+            else:
+                raise ValueError("The dict key does not match any ship types.")
+
+    def insert_user_2_ships(self, ships_dict_array):
+        """Places user 2's ships throughout grid 2 within the
+           selected cell co-ordinates and orientation (vert or horizontal).
+           ships_array must be a dictionary with array values, providing the ships row,
+           column and its orientation, in the format like the following example:
+           ships_dict_array = {'Aircraft Carrier' : [2, 3, 'vertical=True']
+                               'Battleship' : [4, 5, 'False']}
+           The relevant data is passed forward into the place_ship function.
+        """
+        for ship, data in ships_dict_array:
+            if ship is 'aircraft carrier':
+                self.place_ship(5, data[0], data[1], vertical=data[2], grid=2)
+                self.ships_1['Aircraft Carrier'] += 1
+            elif ship is 'battleship':
+                self.place_ship(4, data[0], data[1], vertical=data[2], grid=2)
+                self.ships_1['Battleship'] += 1
+            elif ship is 'submarine':
+                self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
+                self.ships_1['Submarine'] += 1
+            elif ship is 'destroyer':
+                self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
+                self.ships_1['Destroyer'] += 1
+            elif ship is 'patrol boat':
+                self.place_ship(2, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_1['Patrol boat'] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
