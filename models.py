@@ -1,4 +1,5 @@
 import random
+import logging
 from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
@@ -121,23 +122,25 @@ class Game(ndb.Model):
                                'Battleship' : [4, 5, 'False']}
            The relevant data is passed forward into the place_ship function.
         """
-        for ship, data in ships_dict_array:
-            if ship is 'aircraft carrier':
+        for ship, data in ships_dict_array.iteritems():
+            if ship == 'aircraft carrier':
                 self.place_ship(5, data[0], data[1], vertical=data[2])
                 self.ships_1['Aircraft Carrier'] += 1
-            elif ship is 'battleship':
+            elif ship == 'battleship':
                 self.place_ship(4, data[0], data[1], vertical=data[2])
                 self.ships_1['Battleship'] += 1
-            elif ship is 'submarine':
+            elif ship == 'submarine':
                 self.place_ship(3, data[0], data[1], vertical=data[2])
                 self.ships_1['Submarine'] += 1
-            elif ship is 'destroyer':
+            elif ship == 'destroyer':
                 self.place_ship(3, data[0], data[1], vertical=data[2])
                 self.ships_1['Destroyer'] += 1
-            elif ship is 'patrol boat':
+            elif ship == 'patrol boat':
                 self.place_ship(2, data[0], data[1], vertical=data[2])
                 self.ships_1['Patrol boat'] += 1
             else:
+                logging.error("HERE IS THE PROBLEMATIC DICT ENTRY:")
+                logging.error(ship)
                 raise ValueError("The dict key does not match any ship types.")
 
     def insert_user_2_ships(self, ships_dict_array):
@@ -149,22 +152,22 @@ class Game(ndb.Model):
                                'Battleship' : [4, 5, 'False']}
            The relevant data is passed forward into the place_ship function.
         """
-        for ship, data in ships_dict_array:
-            if ship is 'aircraft carrier':
+        for ship, data in ships_dict_array.iteritems():
+            if ship == 'aircraft carrier':
                 self.place_ship(5, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_1['Aircraft Carrier'] += 1
-            elif ship is 'battleship':
+                self.ships_2['Aircraft Carrier'] += 1
+            elif ship == 'battleship':
                 self.place_ship(4, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_1['Battleship'] += 1
-            elif ship is 'submarine':
+                self.ships_2['Battleship'] += 1
+            elif ship == 'submarine':
                 self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_1['Submarine'] += 1
-            elif ship is 'destroyer':
+                self.ships_2['Submarine'] += 1
+            elif ship == 'destroyer':
                 self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_1['Destroyer'] += 1
-            elif ship is 'patrol boat':
+                self.ships_2['Destroyer'] += 1
+            elif ship == 'patrol boat':
                 self.place_ship(2, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_1['Patrol boat'] += 1
+                self.ships_2['Patrol boat'] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
 
@@ -178,12 +181,12 @@ class Game(ndb.Model):
         if vertical == True:
             for row in range(first_row_int, first_row_int+size):
                 self.update_cell(row, first_col_int, grid=grid)
-                return
+            return
                                 
         if vertical == False:
             for col in range(first_col_int, first_col_int+size):
                 self.update_cell(first_row_int, col, grid=grid)
-                return
+            return
 
     def update_cell(self, row_int, col_int, status="ship", grid=1):
         """Update a cell at the chosen co-ordinates on the grid,
@@ -196,7 +199,7 @@ class Game(ndb.Model):
                 return
             elif status == "destroy":
                 # ensure the selected cell is not already destroyed, and update to 'X'
-                if self.return_grid_status(row_int, col_int) != 'X':
+                if self.return_grid_status(row_int, col_int, grid=grid) != 'X':
                     self.grid_1[row_int][col_int] = 'X'
                     return
                 # if the cell is already destroyed, raise ValueError notifying the user.
@@ -211,7 +214,7 @@ class Game(ndb.Model):
                 return
             elif status == "destroy":
                 # ensure the selected cell is not already destroyed, and update to 'X'
-                if self.return_grid_status(row_int, col_int) != 'X':
+                if self.return_grid_status(row_int, col_int, grid=grid) != 'X':
                     self.grid_2[row_int][col_int] = 'X'
                     return
                 # if the cell is already destroyed, raise ValueError notifying the user.
@@ -258,8 +261,8 @@ class Game(ndb.Model):
         form = GameForm(urlsafe_key=self.key.urlsafe(),
                         grid_1 = str(self.grid_1),
                         grid_2 = str(self.grid_2),
-                        ships_1 = str(self.grid_1),
-                        ships_2 = str(self.grid_2),
+                        ships_1 = str(self.ships_1),
+                        ships_2 = str(self.ships_2),
                         user_1=self.user_1.get().name,
                         user_2=self.user_2.get().name,
                         next_move=self.next_move.get().name,

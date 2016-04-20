@@ -7,7 +7,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms, GameForms, UserForm, UserForms
+    ScoreForms, GameForms, UserForm, UserForms, InsertShipsForms
 from utils import get_by_urlsafe, check_winner, check_full
 
 # Fields for conference query options.
@@ -86,7 +86,7 @@ class BattleshipsAPI(remote.Service):
 
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
                       response_message=StringMessage,
-                      path='game{urlsafe_game_key}/user_1_ships',
+                      path='game/{urlsafe_game_key}/user_1_ships',
                       name='user_1_ships',
                       http_method='POST')
     def insert_user_1_ships(self, request):
@@ -101,6 +101,7 @@ class BattleshipsAPI(remote.Service):
                 # and create the dictionary Python objects.
                 ship_data = self._formatShipInserts(request.ships)
                 game.insert_user_1_ships(ship_data)
+                game.put()
                 return StringMessage(message='Player 1 ships successfully added to grid.')
             else:
                 raise endpoints.BadRequestException('Player 1 has already inserted ships!')
@@ -109,7 +110,7 @@ class BattleshipsAPI(remote.Service):
 
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
                       response_message=StringMessage,
-                      path='game{urlsafe_game_key}/user_2_ships',
+                      path='game/{urlsafe_game_key}/user_2_ships',
                       name='user_2_ships',
                       http_method='POST')
     def insert_user_2_ships(self, request):
@@ -122,6 +123,7 @@ class BattleshipsAPI(remote.Service):
             if game.total_ship_cells(grid=2) == 0:
                 ship_data = self._formatShipInserts(request.ships)
                 game.insert_user_2_ships(ship_data)
+                game.put()
                 return StringMessage(message='Player 2 ships successfully added to grid.')
             else:
                 raise endpoints.BadRequestException('Player 2 has already inserted ships!')
@@ -143,7 +145,7 @@ class BattleshipsAPI(remote.Service):
                                 "A ship can be one of either: aircraft carrier, battleship, "
                                  "submarine, destroyer or a patrol boat!".format(ship_type))
 
-            start_row, start_col = int(ship_data['start_row']), int(ship_data['start_col'])
+            start_row, start_col = int(ship_data['start_row']), int(ship_data['start_column'])
 
             if ship_data['orientation'].lower().startswith('h'):
                 vertical = False
@@ -190,7 +192,7 @@ class BattleshipsAPI(remote.Service):
                 # if not raise ValueError for out of bounds input horizontal location.
                 else:
                     retval = False
-                    message = "Aircraft carrier is size 5 and cannot fit there!")
+                    message = "Aircraft carrier is size 5 and cannot fit there!"
                     return retval, message
             else:
                 # raise exception for incorrect vertical keyword if not true or false.
