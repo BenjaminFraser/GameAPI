@@ -347,18 +347,26 @@ class BattleshipsAPI(remote.Service):
         if user.key != game.next_move:
             raise endpoints.BadRequestException('It\'s not your turn!')
 
-        # Just a dummy signifier, what type of symbol is going down
-        x = True if user.key == game.user_x else False
+        # User signifier. True if current user is player 1, otherwise False.
+        user_1 = True if user.key == game.user_1 else False
 
-        location = request.location
+        # set target grid to 2 if current user is user 1, and vice versa.
+        if user_1 == True:
+            target_grid = 2
+        else:
+            target_grid = 1
+
+        row_loc, col_loc = int(request.target_row), int(request.target_col)
         # Verify move is valid
-        if move < 0 or move > 8:
-            raise endpoints.BadRequestException('Invalid move! Must be between'
-                                                '0 and 8')
-        if game.board[move] != '':
-            raise endpoints.BadRequestException('Invalid move!')
+        if row_loc < 0 or row_loc > 9 or col_loc < 0 or col_loc > 9:
+            raise endpoints.BadRequestException('Invalid move! Rows and columns must be '
+                                                'between 0 and 9')
 
-        game.board[move] = 'X' if x else 'O'
+        if game.return_grid_status(row_loc, col_loc, target_grid) == 'X':
+            raise endpoints.BadRequestException('That grid cell is already destroyed! '
+                                                'Try picking another!')
+
+        game.destroy_cell(row_loc, col_loc, grid=target_grid)
         # Append a move to the history
         game.history.append(('X' if x else 'O', move))
         game.next_move = game.user_o if x else game.user_x

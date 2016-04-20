@@ -335,7 +335,8 @@ class InsertShipsForms(messages.Message):
 class MakeMoveForm(messages.Message):
     """Used to make a move in an existing game"""
     user_name = messages.StringField(1, required=True)
-    location = messages.IntegerField(2, required=True)
+    target_row = messages.IntegerField(2, required=True)
+    target_col = messages.IntegerField(3, required=True)
 
 
 class ScoreForm(messages.Message):
