@@ -265,17 +265,17 @@ class Game(ndb.Model):
         ship_cells_2 = self.total_ship_cells(grid=2)
 
         # set both users to False by default.
-        user_1_win, user_2_win = False
+        user_1_win, user_2_win = False, False
 
         if ship_cells_1 == 0:
             # user 1 has lost the game. Report user 2 as winner by returning user_2 = True.
             user_1_win = True
-            return user_1_win, user_2_win
 
         if ship_cells_2 == 0:
             # user 2 has lost the game. Report user 1 as winner by returning user_1 = True.
             user_2_win = True
-            return user_1_win, user_2_win
+
+        return (user_1_win, user_2_win)
 
 
     def to_form(self):
