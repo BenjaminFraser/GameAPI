@@ -175,14 +175,20 @@ class BattleshipsAPI(remote.Service):
         """
         if ship_type == 'aircraft carrier':
             limit = 5
-        if ship_type == 'battleship':
+        elif ship_type == 'battleship':
             limit = 6
-        if ship_type == 'submarine':
+        elif ship_type == 'submarine':
             limit = 7
-        if ship_type == 'destroyer':
+        elif ship_type == 'destroyer':
             limit = 7
-        if ship_type == 'patrol boat':
+        elif ship_type == 'patrol boat':
             limit = 8
+        else:
+            retval = False
+            message = ("The input ship type {0} is not valid! Please use either "
+                        "'aircraft carrier', 'battleship', 'submarine', 'destroyer' or "
+                        "'patrol boat'!".format(ship_type))
+            return retval, message
 
         if vertical == True:
             # verify that the ship will fit into the battle grid based on input.
@@ -207,13 +213,7 @@ class BattleshipsAPI(remote.Service):
         else:
             # raise exception for incorrect vertical keyword if not true or false.
             raise ValueError("The 'vertical' keyword must be True or False!")
-                
-        else:
-            retval = False
-            message = ("The input ship type {0} is not valid! Please use either "
-                        "'aircraft carrier', 'battleship', 'submarine', 'destroyer' or "
-                        "'patrol boat'!".format(ship_type))
-            return retval, message
+
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
