@@ -8,7 +8,7 @@ from google.appengine.api import taskqueue
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
     ScoreForms, GameForms, UserForm, UserForms, InsertShipsForms
-from utils import get_by_urlsafe, check_winner, check_full
+from utils import get_by_urlsafe
 
 # Fields for conference query options.
 SHIP_TYPES =    [
@@ -366,17 +366,21 @@ class BattleshipsAPI(remote.Service):
             raise endpoints.BadRequestException('That grid cell is already destroyed! '
                                                 'Try picking another!')
 
-        game.destroy_cell(row_loc, col_loc, grid=target_grid)
-        # Append a move to the history
-        game.history.append(('X' if x else 'O', move))
-        game.next_move = game.user_o if x else game.user_x
-        winner = check_winner(game.board)
-        if not winner and check_full(game.board):
-            # Just delete the game
-            game.key.delete()
-            raise endpoints.NotFoundException('Tie game, game deleted!')
-        if winner:
-           game.end_game(user.key)
+        target_hit = game.destroy_cell(row_loc, col_loc, grid=target_grid)
+        # Append a move to the relevant history dict key dependent on user and hit status.
+        history_msg = 'Ship hit!' if target_hit else 'No ship hit!'
+        history_entry = (row_loc, col_loc, history_msg)
+        game.history['grid_2' if user_1 else 'grid_1'].append(history_entry)
+
+        # set next move within the game.
+        game.next_move = game.user_2 if user_1 else game.user_1
+
+        # check for any winners, end game and report winner if true.
+        winner_p1, winner_p2 = game.check_winner()
+        if winner_p1:
+            game.end_game(game.user_1)
+        if winner_p2:
+            game.end_game(game.user_2)
         else:
             # Send reminder email
             taskqueue.add(url='/tasks/send_move_email',

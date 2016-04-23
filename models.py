@@ -69,7 +69,7 @@ class Game(ndb.Model):
                         'Patrol boat' : 0 }
         # set user 1 and user 2 ships to the default
         game.ships_1 = game.ships_2 = empty_ships
-        game.history = []
+        game.history = {'grid_1' : [], 'grid_2' : []}
         game.put()
         return game
 
@@ -255,6 +255,28 @@ class Game(ndb.Model):
             return self.grid_1[row_int][col_int]
         else:
             return self.grid_2[row_int][col_int]
+
+    def check_winner(self):
+        """Check both battle grids. If there is a winner, report that user_win as True.
+           Returns two values: user_1_win and user_2_win.
+        """
+        # Check both grids total ship cells remaining.
+        ship_cells_1 = self.total_ship_cells(grid=1)
+        ship_cells_2 = self.total_ship_cells(grid=2)
+
+        # set both users to False by default.
+        user_1_win, user_2_win = False
+
+        if ship_cells_1 == 0:
+            # user 1 has lost the game. Report user 2 as winner by returning user_2 = True.
+            user_1_win = True
+            return user_1_win, user_2_win
+
+        if ship_cells_2 == 0:
+            # user 2 has lost the game. Report user 1 as winner by returning user_1 = True.
+            user_2_win = True
+            return user_1_win, user_2_win
+
 
     def to_form(self):
         """Returns a GameForm representation of the Game"""
