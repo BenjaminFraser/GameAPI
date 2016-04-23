@@ -34,8 +34,8 @@ class SendReminderEmail(webapp2.RequestHandler):
         users = User.query(User.email != None)
 
         for user in users:
-            games = Game.query(ndb.OR(Game.user_x == user.key,
-                                     Game.user_o == user.key)).\
+            games = Game.query(ndb.OR(Game.user_1 == user.key,
+                                     Game.user_2 == user.key)).\
                 filter(Game.game_over == False)
             if games.count() > 0:
                 subject = 'This is a reminder!'
@@ -57,7 +57,7 @@ class SendReminderEmail(webapp2.RequestHandler):
 class UpdateAverageMovesRemaining(webapp2.RequestHandler):
     def post(self):
         """Update game listing announcement in memcache."""
-        TicTacToeAPI._cache_average_attempts()
+        BattleshipsAPI._cache_average_attempts()
         self.response.set_status(204)
 
 class SendMoveEmail(webapp2.RequestHandler):
@@ -67,7 +67,7 @@ class SendMoveEmail(webapp2.RequestHandler):
         user = get_by_urlsafe(self.request.get('user_key'), User)
         game = get_by_urlsafe(self.request.get('game_key'), Game)
         subject = 'It\'s your turn!'
-        body = '{}, It\'s your turn to play Tic Tac Toe. The game key is: {}'.\
+        body = '{}, It\'s your turn to play Battleships! The game key is: {}'.\
            format(user.name, game.key.urlsafe())
         logging.debug(body)
         mail.send_mail('noreply@{}.appspotmail.com'.
