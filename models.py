@@ -145,8 +145,6 @@ class Game(ndb.Model):
                 self.place_ship(2, data[0], data[1], vertical=data[2])
                 self.ships_1['Patrol boat'] += 1
             else:
-                logging.error("HERE IS THE PROBLEMATIC DICT ENTRY:")
-                logging.error(ship)
                 raise ValueError("The dict key does not match any ship types.")
 
     def insert_user_2_ships(self, ships_dict_array):
@@ -214,20 +212,31 @@ class Game(ndb.Model):
                 raise ValueError("The grid must be 1 or 2.")
 
         if remove:
-            if grid == 1:
-                # check to ensure the co-ordinate exists, then remove.
-                if (row_int, col_int) in self.loc_ships_1[ship_type]:
-                    self.loc_ships_1[ship_type].remove((row_int, col_int))
-                    return
-                else:
-                    raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
-                    
-            elif grid == 2:
-                if (row_int, col_int) in self.loc_ships_2[ship_type]:
-                    self.loc_ships_2[ship_type].remove((row_int, col_int))
-                    return
-                else:
-                    raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
+            # if ship type is unknown, search the ship loc dict and find co-ordinates.
+            if grid == 1 and ship_type == 'unknown':
+                for ship, locations in self.loc_ships_1.iteritems():
+                    if (row_int, col_int) in locations:
+                        self.loc_ships_1[ship].remove((row_int, col_int))
+                        if len(self.loc_ships_1[ship]) == 0:
+                            # update the ships dict to indicate destruction of the ship.
+                            self.ships_1[ship_type] -= 1
+                        return
+                    else:
+                        raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
+
+            elif grid == 2 and ship_type == 'unknown':
+                for ship, locations in self.loc_ships_2.iteritems():
+                    if (row_int, col_int) in locations:
+                        self.loc_ships_2[ship].remove((row_int, col_int))
+                        if len(self.loc_ships_2[ship]) == 0:
+                            # update the ships dict to indicate destruction of the ship.
+                            self.ships_2[ship_type] -= 1
+                        return
+                    else:
+                        raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
+
+            else:
+                raise ValueError("The ship type is always 'unknown' during removal.")
 
     def update_cell(self, row_int, col_int, status="ship", grid=1):
         """Update a cell at the chosen co-ordinates on the grid,
@@ -274,8 +283,12 @@ class Game(ndb.Model):
         retval = False
         status = self.return_grid_status(row_int, col_int, grid=grid)
         if status == '+':
+            # set the retval to True, indicating the attack as a successful hit.
             retval = True
+            # Update the cell to display an 'X' using update_cell() method.
             self.update_cell(row_int, col_int, status="destroy", grid=grid)
+            # Update the ship location dictionary, removing the relevant co-ordinates.
+            self.update_ship_loc_values('unknown', row_int, col_int, grid=grid, remove=True)
             return retval
 
         if status == '-':
