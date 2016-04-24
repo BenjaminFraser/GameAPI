@@ -66,14 +66,14 @@ class Game(ndb.Model):
         new_board = [['-' for row in rows] for col in columns]
         game.grid_1 = game.grid_2 = new_board
         # create a dict object with default 0 ships of each type.
-        empty_ships = { 'Aircraft Carrier' : 0, 'Battleship' : 0,
-                        'Submarine' : 0, 'Destroyer' : 0,
-                        'Patrol boat' : 0 }
+        empty_ships = { 'aircraft carrier' : 0, 'battleship' : 0,
+                        'submarine' : 0, 'destroyer' : 0,
+                        'patrol boat' : 0 }
         # set user 1 and user 2 ships to the default
         game.ships_1 = game.ships_2 = empty_ships
-        empty_locs = { 'Aircraft Carrier' : [], 'Battleship' : [],
-                        'Submarine' : [], 'Destroyer' : [],
-                        'Patrol boat' : [] }
+        empty_locs = { 'aircraft carrier' : [], 'battleship' : [],
+                        'submarine' : [], 'destroyer' : [],
+                        'patrol boat' : [] }
         game.loc_ships_1 = game.loc_ships_2 = empty_locs
         game.history = {'grid_1' : [], 'grid_2' : []}
         game.put()
@@ -130,20 +130,20 @@ class Game(ndb.Model):
         """
         for ship, data in ships_dict_array.iteritems():
             if ship == 'aircraft carrier':
-                self.place_ship(5, data[0], data[1], vertical=data[2])
-                self.ships_1['Aircraft Carrier'] += 1
+                self.place_ship(ship, 5, data[0], data[1], vertical=data[2])
+                self.ships_1[ship] += 1
             elif ship == 'battleship':
-                self.place_ship(4, data[0], data[1], vertical=data[2])
-                self.ships_1['Battleship'] += 1
+                self.place_ship(ship, 4, data[0], data[1], vertical=data[2])
+                self.ships_1[ship] += 1
             elif ship == 'submarine':
-                self.place_ship(3, data[0], data[1], vertical=data[2])
-                self.ships_1['Submarine'] += 1
+                self.place_ship(ship, 3, data[0], data[1], vertical=data[2])
+                self.ships_1[ship] += 1
             elif ship == 'destroyer':
-                self.place_ship(3, data[0], data[1], vertical=data[2])
-                self.ships_1['Destroyer'] += 1
+                self.place_ship(ship, 3, data[0], data[1], vertical=data[2])
+                self.ships_1[ship] += 1
             elif ship == 'patrol boat':
-                self.place_ship(2, data[0], data[1], vertical=data[2])
-                self.ships_1['Patrol boat'] += 1
+                self.place_ship(ship, 2, data[0], data[1], vertical=data[2])
+                self.ships_1[ship] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
 
@@ -159,19 +159,19 @@ class Game(ndb.Model):
         for ship, data in ships_dict_array.iteritems():
             if ship == 'aircraft carrier':
                 self.place_ship(ship, 5, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_2['Aircraft Carrier'] += 1
+                self.ships_2[ship] += 1
             elif ship == 'battleship':
                 self.place_ship(ship, 4, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_2['Battleship'] += 1
+                self.ships_2[ship] += 1
             elif ship == 'submarine':
                 self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_2['Submarine'] += 1
+                self.ships_2[ship] += 1
             elif ship == 'destroyer':
                 self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_2['Destroyer'] += 1
+                self.ships_2[ship] += 1
             elif ship == 'patrol boat':
                 self.place_ship(ship, 2, data[0], data[1], vertical=data[2], grid=2)
-                self.ships_2['Patrol boat'] += 1
+                self.ships_2[ship] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
 
@@ -214,25 +214,28 @@ class Game(ndb.Model):
         if remove:
             # if ship type is unknown, search the ship loc dict and find co-ordinates.
             if grid == 1 and ship_type == 'unknown':
+                found = False
                 for ship, locations in self.loc_ships_1.iteritems():
                     if (row_int, col_int) in locations:
                         self.loc_ships_1[ship].remove((row_int, col_int))
                         if len(self.loc_ships_1[ship]) == 0:
                             # update the ships dict to indicate destruction of the ship.
-                            self.ships_1[ship_type] -= 1
+                            self.ships_1[ship] -= 1
                         return
-                    else:
+                if found == False:
                         raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
 
             elif grid == 2 and ship_type == 'unknown':
+                found = False
                 for ship, locations in self.loc_ships_2.iteritems():
                     if (row_int, col_int) in locations:
+                        found = True
                         self.loc_ships_2[ship].remove((row_int, col_int))
                         if len(self.loc_ships_2[ship]) == 0:
                             # update the ships dict to indicate destruction of the ship.
-                            self.ships_2[ship_type] -= 1
+                            self.ships_2[ship] -= 1
                         return
-                    else:
+                if found == False:
                         raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
 
             else:
@@ -339,6 +342,8 @@ class Game(ndb.Model):
                         grid_2 = str(self.grid_2),
                         ships_1 = str(self.ships_1),
                         ships_2 = str(self.ships_2),
+                        loc_ships_1 = str(self.loc_ships_1),
+                        loc_ships_2 = str(self.loc_ships_2),
                         user_1=self.user_1.get().name,
                         user_2=self.user_2.get().name,
                         next_move=self.next_move.get().name,
@@ -381,11 +386,13 @@ class GameForm(messages.Message):
     grid_2 = messages.StringField(3, required=True)
     ships_1 = messages.StringField(4, required=True)
     ships_2 = messages.StringField(5, required=True)
-    user_1 = messages.StringField(6, required=True)
-    user_2 = messages.StringField(7, required=True)
-    next_move = messages.StringField(8, required=True)
-    game_over = messages.BooleanField(9, required=True)
-    winner = messages.StringField(10)
+    loc_ships_1 = messages.StringField(6, required=True)
+    loc_ships_2 = messages.StringField(7, required=True)
+    user_1 = messages.StringField(8, required=True)
+    user_2 = messages.StringField(9, required=True)
+    next_move = messages.StringField(10, required=True)
+    game_over = messages.BooleanField(11, required=True)
+    winner = messages.StringField(12)
 
 
 class GameForms(messages.Message):
