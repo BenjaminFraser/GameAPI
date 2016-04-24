@@ -174,15 +174,15 @@ class BattleshipsAPI(remote.Service):
                  - The message gives an indication as to the problem is retal is false.
         """
         if ship_type == 'aircraft carrier':
-            limit = 5
+            limit, size = 5, 5
         elif ship_type == 'battleship':
-            limit = 6
+            limit, size = 6, 4
         elif ship_type == 'submarine':
-            limit = 7
+            limit, size = 7, 3
         elif ship_type == 'destroyer':
-            limit = 7
+            limit, size = 7, 3
         elif ship_type == 'patrol boat':
-            limit = 8
+            limit, size = 8, 2
         else:
             retval = False
             message = ("The input ship type {0} is not valid! Please use either "
@@ -198,7 +198,7 @@ class BattleshipsAPI(remote.Service):
             # if not set retval false and message for out of bounds input location.
             else:
                 retval = False
-                message = "{0} is size {1} and cannot fit there!".format(ship_type, limit)
+                message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
                 return False, message
         elif vertical == False:
             # verify that horizontal location is within the grid limits.
@@ -208,7 +208,7 @@ class BattleshipsAPI(remote.Service):
             # if not raise ValueError for out of bounds input horizontal location.
             else:
                 retval = False
-                message = "{0} is size {1} and cannot fit there!".format(ship_type, limit)
+                message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
                 return retval, message
         else:
             # raise exception for incorrect vertical keyword if not true or false.

@@ -45,6 +45,8 @@ class Game(ndb.Model):
     grid_2 = ndb.PickleProperty(required=True)
     ships_1 = ndb.PickleProperty(required=True)
     ships_2 = ndb.PickleProperty(required=True)
+    loc_ships_1 = ndb.PickleProperty(required=True)
+    loc_ships_2 = ndb.PickleProperty(required=True)
     next_move = ndb.KeyProperty(required=True) # The User's whose turn it is
     user_1 = ndb.KeyProperty(required=True, kind='User')
     user_2 = ndb.KeyProperty(required=True, kind='User')
@@ -69,6 +71,10 @@ class Game(ndb.Model):
                         'Patrol boat' : 0 }
         # set user 1 and user 2 ships to the default
         game.ships_1 = game.ships_2 = empty_ships
+        empty_locs = { 'Aircraft Carrier' : [], 'Battleship' : [],
+                        'Submarine' : [], 'Destroyer' : [],
+                        'Patrol boat' : [] }
+        game.loc_ships_1 = game.loc_ships_2 = empty_locs
         game.history = {'grid_1' : [], 'grid_2' : []}
         game.put()
         return game
@@ -154,24 +160,24 @@ class Game(ndb.Model):
         """
         for ship, data in ships_dict_array.iteritems():
             if ship == 'aircraft carrier':
-                self.place_ship(5, data[0], data[1], vertical=data[2], grid=2)
+                self.place_ship(ship, 5, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2['Aircraft Carrier'] += 1
             elif ship == 'battleship':
-                self.place_ship(4, data[0], data[1], vertical=data[2], grid=2)
+                self.place_ship(ship, 4, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2['Battleship'] += 1
             elif ship == 'submarine':
-                self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
+                self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2['Submarine'] += 1
             elif ship == 'destroyer':
-                self.place_ship(3, data[0], data[1], vertical=data[2], grid=2)
+                self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2['Destroyer'] += 1
             elif ship == 'patrol boat':
-                self.place_ship(2, data[0], data[1], vertical=data[2], grid=2)
+                self.place_ship(ship, 2, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2['Patrol boat'] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
 
-    def place_ship(self, size, first_row_int, first_col_int, vertical=True, grid=1):
+    def place_ship(self, ship_type, size, first_row_int, first_col_int, vertical=True, grid=1):
         """Places a ship of chosen size into the grid at the chosen co-ordinates,
         by default, the ship is placed vertically, with the given co-ords
         being the uppermost cell.
@@ -181,12 +187,47 @@ class Game(ndb.Model):
         if vertical == True:
             for row in range(first_row_int, first_row_int+size):
                 self.update_cell(row, first_col_int, grid=grid)
+                # Add the ship locations to the relevant loc_ships dict
+                self.update_ship_loc_values(ship_type, row, first_col_int, grid=grid)
             return
                                 
         if vertical == False:
             for col in range(first_col_int, first_col_int+size):
                 self.update_cell(first_row_int, col, grid=grid)
+                # Add the ship locations to the relevant loc_ships dict
+                self.update_ship_loc_values(ship_type, first_row_int, col, grid=grid)
             return
+
+    def update_ship_loc_values(self, ship_type, row_int, col_int, grid=1, remove=False):
+        """Updates the values of locations within loc_ships_1 or loc_ships_2.
+           If a ship has been hit, the remove arg should be set to True.
+        """ 
+        if not remove:
+            if grid == 1:
+                # append the cell co-ordinate to the relevant key of the loc dict.
+                self.loc_ships_1[ship_type].append((row_int, col_int))
+                return
+            elif grid == 2:
+                self.loc_ships_2[ship_type].append((row_int, col_int))
+                return
+            else:
+                raise ValueError("The grid must be 1 or 2.")
+
+        if remove:
+            if grid == 1:
+                # check to ensure the co-ordinate exists, then remove.
+                if (row_int, col_int) in self.loc_ships_1[ship_type]:
+                    self.loc_ships_1[ship_type].remove((row_int, col_int))
+                    return
+                else:
+                    raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
+                    
+            elif grid == 2:
+                if (row_int, col_int) in self.loc_ships_2[ship_type]:
+                    self.loc_ships_2[ship_type].remove((row_int, col_int))
+                    return
+                else:
+                    raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
 
     def update_cell(self, row_int, col_int, status="ship", grid=1):
         """Update a cell at the chosen co-ordinates on the grid,
