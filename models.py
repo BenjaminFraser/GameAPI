@@ -156,7 +156,9 @@ class Game(ndb.Model):
                                'Battleship' : [4, 5, 'False']}
            The relevant data is passed forward into the place_ship function.
         """
+        # iterate through dict object using iteritems()
         for ship, data in ships_dict_array.iteritems():
+            # handle each ship accordingly.
             if ship == 'aircraft carrier':
                 self.place_ship(ship, 5, data[0], data[1], vertical=data[2], grid=2)
                 self.ships_2[ship] += 1
@@ -209,6 +211,7 @@ class Game(ndb.Model):
                 self.loc_ships_2[ship_type].append((row_int, col_int))
                 return
             else:
+                # raise error if grid is anything other than 1 or 2.
                 raise ValueError("The grid must be 1 or 2.")
 
         if remove:
@@ -248,6 +251,7 @@ class Game(ndb.Model):
         """
         if grid == 1:
             if status == "ship":
+                # add a '+' to the selected cell.
                 self.grid_1[row_int][col_int] = '+'
                 return
             elif status == "destroy":

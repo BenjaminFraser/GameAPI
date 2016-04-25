@@ -99,9 +99,13 @@ class BattleshipsAPI(remote.Service):
             if game.total_ship_cells(grid=1) == 0:
                 # uses _formatShipInsert helper function to validate 
                 # and create the dictionary Python objects.
-                ship_data = self._formatShipInserts(request.ships)
-                game.insert_user_1_ships(ship_data)
-                game.put()
+                try:
+                    ship_data = self._formatShipInserts(request.ships)
+                    game.insert_user_1_ships(ship_data)
+                    game.put()
+                except Exception as e:
+                    msg = e
+                    raise endpoints.BadRequestException(msg)
                 return StringMessage(message='Player 1 ships successfully added to grid.')
             else:
                 raise endpoints.BadRequestException('Player 1 has already inserted ships!')
@@ -121,9 +125,13 @@ class BattleshipsAPI(remote.Service):
             # a dictionary with array values containing starting row, col and orientation.
             # ensure ships have not already been inserted.
             if game.total_ship_cells(grid=2) == 0:
-                ship_data = self._formatShipInserts(request.ships)
-                game.insert_user_2_ships(ship_data)
-                game.put()
+                try:
+                    ship_data = self._formatShipInserts(request.ships)
+                    game.insert_user_2_ships(ship_data)
+                    game.put()
+                except Exception as e:
+                    msg = e
+                    raise endpoints.BadRequestException(msg)
                 return StringMessage(message='Player 2 ships successfully added to grid.')
             else:
                 raise endpoints.BadRequestException('Player 2 has already inserted ships!')
