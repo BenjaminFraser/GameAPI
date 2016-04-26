@@ -127,7 +127,7 @@ class BattleshipsAPI(remote.Service):
             if game.total_ship_cells(grid=2) == 0:
                 try:
                     ship_data = self._formatShipInserts(request.ships)
-                    game.insert_user_2_ships(ship_data, user='user_2')
+                    game.insert_user_ships(ship_data, user='user_2')
                     game.put()
                 except Exception as e:
                     msg = e
@@ -152,6 +152,11 @@ class BattleshipsAPI(remote.Service):
                 raise ValueError("Please enter a valid ship type. '{0}' is not valid! "
                                 "A ship can be one of either: aircraft carrier, battleship, "
                                  "submarine, destroyer or a patrol boat!".format(ship_type))
+
+            # ensure more than one ship type is not being inserted into the grid.
+            if ship_type in formatted_ships:
+                raise endpoints.BadRequestException('More than one ship type cannot be inserted! '
+                            'You have tried to insert more than one {0}!'.format(ship_type))
 
             start_row, start_col = int(ship_data['start_row']), int(ship_data['start_column'])
 
@@ -269,7 +274,7 @@ class BattleshipsAPI(remote.Service):
             raise endpoints.NotFoundException('Game not found!')
 
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
-                      response_message=GameForm,
+                      response_message=StringMessage,
                       path='game/{urlsafe_game_key}',
                       name='make_move',
                       http_method='PUT')
@@ -278,9 +283,14 @@ class BattleshipsAPI(remote.Service):
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if not game:
             raise endpoints.NotFoundException('Game not found')
+        # ensure the game is not already over.
         if game.game_over:
             raise endpoints.NotFoundException('Game already over')
-
+        # ensure that ships have been inserted onto both grids prior to a move.
+        if game.total_ships(grid=1) == 0 or game.total_ships(grid=2) == 0:
+            raise endpoints.BadRequestException('Both users must have inserted ships '
+                                                'prior to beginning the game.')
+        # ensure the correct user is making a move.
         user = User.query(User.name == request.user_name).get()
         if user.key != game.next_move:
             raise endpoints.BadRequestException('It\'s not your turn!')
@@ -289,21 +299,18 @@ class BattleshipsAPI(remote.Service):
         user_1 = True if user.key == game.user_1 else False
 
         # set target grid to 2 if current user is user 1, and vice versa.
-        if user_1 == True:
-            target_grid = 2
-        else:
-            target_grid = 1
+        target_grid = 2 if user_1 else 1
 
         row_loc, col_loc = int(request.target_row), int(request.target_col)
         # Verify move is valid
         if row_loc < 0 or row_loc > 9 or col_loc < 0 or col_loc > 9:
             raise endpoints.BadRequestException('Invalid move! Rows and columns must be '
                                                 'between 0 and 9')
-
+        # check if grid cell is already destroyed.
         if game.return_grid_status(row_loc, col_loc, target_grid) == 'X':
             raise endpoints.BadRequestException('That grid cell is already destroyed! '
                                                 'Try picking another!')
-
+        # check whether the move was a hit or miss.
         target_hit = game.destroy_cell(row_loc, col_loc, grid=target_grid)
         # Append a move to the relevant history dict key dependent on user and hit status.
         history_msg = 'Ship hit!' if target_hit else 'No ship hit!'
@@ -317,15 +324,29 @@ class BattleshipsAPI(remote.Service):
         winner_p1, winner_p2 = game.check_winner()
         if winner_p1:
             game.end_game(game.user_1)
+            game.put()
+            return StringMessage(message='The game is over! {0} has won the match!'.
+                                 format(game.user_1.get().name))
         if winner_p2:
             game.end_game(game.user_2)
+            game.put()
+            return StringMessage(message='The game is over! {0} has won the match!'.
+                                 format(game.user_2))
         else:
             # Send reminder email
             taskqueue.add(url='/tasks/send_move_email',
                           params={'user_key': game.next_move.urlsafe(),
-                                  'game_key': game.key.urlsafe()})
+                                   'game_key': game.key.urlsafe()})
+
+        target_hit_msg = 'You hit a ship! Well done!'
+        target_miss_msg = 'No ship hit! Better luck next time!'
+        # create a message to notify the player that they hit or missed.
+        ret_msg = ("{0} You have now made the following moves: {1}. "
+                        "{2} is up next!".format(target_hit_msg if target_hit else target_miss_msg,
+                                                game.history['grid_2' if user_1 else 'grid_1'],
+                                                game.next_move.get().name))
         game.put()
-        return game.to_form()
+        return StringMessage(message=ret_msg)
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
