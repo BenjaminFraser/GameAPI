@@ -101,7 +101,7 @@ class BattleshipsAPI(remote.Service):
                 # and create the dictionary Python objects.
                 try:
                     ship_data = self._formatShipInserts(request.ships)
-                    game.insert_user_1_ships(ship_data)
+                    game.insert_user_ships(ship_data)
                     game.put()
                 except Exception as e:
                     msg = e
@@ -127,7 +127,7 @@ class BattleshipsAPI(remote.Service):
             if game.total_ship_cells(grid=2) == 0:
                 try:
                     ship_data = self._formatShipInserts(request.ships)
-                    game.insert_user_2_ships(ship_data)
+                    game.insert_user_2_ships(ship_data, user='user_2')
                     game.put()
                 except Exception as e:
                     msg = e

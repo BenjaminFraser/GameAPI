@@ -119,7 +119,7 @@ class Game(ndb.Model):
         locations = [list(x) for x in zip(row_loc, col_loc)]
         return locations
 
-    def insert_user_1_ships(self, ships_dict_array):
+    def insert_user_ships(self, ships_dict_array, user='user_1'):
         """Places user 1's ships throughout grid 1 within the
            selected cell co-ordinates and orientation (vert or horizontal).
            ships_array must be a dictionary with array values, providing the ships row,
@@ -128,24 +128,57 @@ class Game(ndb.Model):
                                'Battleship' : [4, 5, 'False']}
            The relevant data is passed forward into the place_ship function.
         """
+        ship_grid = "ships_2" if user == 'user_2' else ship_grid = 'ships_1'
+        #if user == 'user_1':
+            # iterate through dict object using iteritems()
         for ship, data in ships_dict_array.iteritems():
             if ship == 'aircraft carrier':
                 self.place_ship(ship, 5, data[0], data[1], vertical=data[2])
-                self.ships_1[ship] += 1
+                getattr(self, ship_grid)[ship] += 1
+                #self.ships_1[ship] += 1
             elif ship == 'battleship':
                 self.place_ship(ship, 4, data[0], data[1], vertical=data[2])
-                self.ships_1[ship] += 1
+                getattr(self, ship_grid)[ship] += 1
+                #self.ships_1[ship] += 1
             elif ship == 'submarine':
                 self.place_ship(ship, 3, data[0], data[1], vertical=data[2])
-                self.ships_1[ship] += 1
+                getattr(self, ship_grid)[ship] += 1
+                #self.ships_1[ship] += 1
             elif ship == 'destroyer':
                 self.place_ship(ship, 3, data[0], data[1], vertical=data[2])
-                self.ships_1[ship] += 1
+                getattr(self, ship_grid)[ship] += 1
+                #self.ships_1[ship] += 1
             elif ship == 'patrol boat':
                 self.place_ship(ship, 2, data[0], data[1], vertical=data[2])
-                self.ships_1[ship] += 1
+                getattr(self, ship_grid)[ship] += 1
+                #self.ships_1[ship] += 1
             else:
                 raise ValueError("The dict key does not match any ship types.")
+
+        """elif user == 'user_2':
+            # iterate through dict object using iteritems()
+            for ship, data in ships_dict_array.iteritems():
+                # handle each ship accordingly.
+                if ship == 'aircraft carrier':
+                    self.place_ship(ship, 5, data[0], data[1], vertical=data[2], grid=2)
+                    self.ships_2[ship] += 1
+                elif ship == 'battleship':
+                    self.place_ship(ship, 4, data[0], data[1], vertical=data[2], grid=2)
+                    self.ships_2[ship] += 1
+                elif ship == 'submarine':
+                    self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
+                    self.ships_2[ship] += 1
+                elif ship == 'destroyer':
+                    self.place_ship(ship, 3, data[0], data[1], vertical=data[2], grid=2)
+                    self.ships_2[ship] += 1
+                elif ship == 'patrol boat':
+                    self.place_ship(ship, 2, data[0], data[1], vertical=data[2], grid=2)
+                    self.ships_2[ship] += 1
+                else:
+                    raise ValueError("The dict key does not match any ship types.")
+
+        else:
+            raise ValueError("The user must be either 'user_1' or 'user_2'.")"""
 
     def insert_user_2_ships(self, ships_dict_array):
         """Places user 2's ships throughout grid 2 within the
