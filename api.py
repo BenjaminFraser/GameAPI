@@ -38,6 +38,8 @@ USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
 
 MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
 
+MEMCACHE_USER_SHIPS_REMAINING = 'SHIPS_REMAINING'
+
 @endpoints.api(name='battleships', version='v1')
 class BattleshipsAPI(remote.Service):
     """Game API"""
@@ -402,6 +404,25 @@ class BattleshipsAPI(remote.Service):
             average = float(total_attempts_remaining)/count
             memcache.set(MEMCACHE_MOVES_REMAINING,
                          'The average moves remaining is {:.2f}'.format(average))
+
+    @staticmethod
+    def _cache_ships_remaining():
+        """Populates memcache with the number of ships remaining for both users
+           of the current Games still in progress
+        """
+        games = Game.query(Game.game_over == False).fetch()
+        if games:
+            ship_game_data = []
+            for game in games:
+                websafe_game_key = game.key.urlsafe()
+                ships_1, ships_2 = game.total_ships(grid=1), game.total_ships(grid=2)
+                user_1, user_2 = game.user_1.get().name, game.user_2.get().name
+                msg = ("Game key {0}, user 1 is {1} with {2} ships, user 2 is {3} "
+                        "with {4} ships.".format(websafe_game_key, user_1, ships_1, user_2, ships2))
+                ship_game_data.append(msg)
+            memcache.set(MEMCACHE_USER_SHIPS_REMAINING,
+                         'The current games in progress, along with the number of ships '
+                         'each user has is: {0}'.format('::'.join(ship_game_data)))
 
 
 api = endpoints.api_server([BattleshipsAPI])

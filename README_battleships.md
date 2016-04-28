@@ -13,16 +13,25 @@
 Battleships is a simple two player game. Game instructions are available
 [here](https://en.wikipedia.org/wiki/Battleship_(game)).
 
-Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes as follows:
-[0, 1, 2, ... 9
- 10, 11, 13, ... 19
- 20, 21, 22, ... 29
- 30, 31, 32, ... 39
- 40, 41, 42, ... 49
- 50, 51, 52, ... 59
- 60, 61, 62, ... 69
- ... 
- 90, 91, 92, ... 99]
+Each players grid is represented as a two dimensional array of 100 squares, consisting of 10 
+rows and 10 columns. When initialised, the grid is as follows:
+
+[['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+['-', '-', '-', '-', '-', '-', '-', '-', '-', '-']]
+
+- Each cell is labelled as '-', which signifies an empty cell. 
+- When a ship is inserted into the grid, it is represented by a series of cells marked as '+'.
+- When a ship or grid cell is destroyed, it is labelled with a 'X'.
+- A game is over once all of a players ship cells ('+') are replaced by an 'X'. The player who destroys
+all of the opponents ships first is the winner of the match.
 
  There are five classes of ships a player may place on their grid:
  - Aircraft carrier: occupies 5 grid squares
@@ -30,6 +39,11 @@ Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes 
  - Submarine: occupies 3 grid squares
  - Destroyer: occupies 3 grid squares
  - Patrol boat: occupies 2 grid squares
+
+ Each ship is positioned onto a users grid prior to a game through entering 
+ the starting location for the ship, using a starting row and starting column, 
+ and is then positioned using the orientation field, by entering 'vertical' or
+ 'horizontal'.
  
 
 ##Files Included:
@@ -52,10 +66,31 @@ Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes 
  - **new_game**
     - Path: 'game'
     - Method: POST
-    - Parameters: user_x, user_y
+    - Parameters: user_1, user_2
     - Returns: GameForm with initial game state.
-    - Description: Creates a new Game. `user_x` and `user_o` are the names of the
-    'X' and 'O' player respectively
+    - Description: Creates a new Game. `user_1` and `user_2` are the names of the
+    two players, each of whom have a new grid 1 and grid 2 initialised for them
+    respectively.
+
+- **insert_user_1_ships**
+    - Path: 'game/{urlsafe_game_key}/user_1_ships'
+    - Method: POST
+    - Parameters: urlsafe_game_key, insert ship data forms.
+    - Returns: Message confirming the ship insertion.
+    - Description: Inserts initial ships into the grid 1 battlegrid, prior to a 
+    game beginning. The user may input a maximum of one of each ship type onto
+    their grid, and ships must fit within the grid cells, and each ship must not
+    conflict with the grid cells of any other ships.
+
+- **insert_user_2_ships**
+    - Path: 'game/{urlsafe_game_key}/user_2_ships'
+    - Method: POST
+    - Parameters: urlsafe_game_key, insert ship data forms.
+    - Returns: Message confirming the ship insertion.
+    - Description: Inserts initial ships into the grid 2 battlegrid, prior to a 
+    game beginning. The user may input a maximum of one of each ship type onto
+    their grid, and ships must fit within the grid cells, and each ship must not
+    conflict with the grid cells of any other ships.
      
  - **get_game**
     - Path: 'game/{urlsafe_game_key}'
@@ -67,13 +102,13 @@ Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes 
  - **make_move**
     - Path: 'game/{urlsafe_game_key}'
     - Method: PUT
-    - Parameters: urlsafe_game_key, user_name, move
-    - Returns: GameForm with new game state.
-    - Description: Accepts a move and returns the updated state of the game.
-    A move is a number from 0 - 8 corresponding to one of the 9 possible
-    positions on the board.
-    If this causes a game to end, a corresponding Score entity will be created,
-    unless the game is tied - in which case the game will be deleted.
+    - Parameters: urlsafe_game_key, user_name, target_row, target_col
+    - Returns: Message confirming a hit, miss or ending of the game.
+    - Description: Accepts an attack and returns the result of the attack.
+    An attack is a row number from 0 - 9 and a column number from 0 - 9, corresponding 
+    to one of the 100 possible grid cells on the opponents board.
+    If this causes a game to end, a corresponding Score entity will be created listing
+    the winner and looser of the game.
     
  - **get_scores**
     - Path: 'scores'
@@ -106,8 +141,12 @@ Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes 
     
  - **Game**
     - Stores unique game states. Associated with User models via KeyProperties
-    user_x and user_o.
-    
+    user_1 and user_2.
+    - Stores information about each users game state using `ships` and `loc_ships`
+    dictionaries for each user. `ships` stores the number of ships currently on the
+    users battlegrid, whilst loc_ships dict stores the associated locations of these ships 
+    using an array of tuples.
+
  - **Score**
     - Records completed games. Associated with Users model via KeyProperty as
     well.
@@ -118,8 +157,12 @@ Each players grid is represented as a 10 x 10 grid of 100 squares, with indexes 
     user_x, user_o, game_over, winner).
  - **NewGameForm**
     - Used to create a new game (user_x, user_o)
+- **InsertShipsForm**
+    - Used to insert a specified ship type into a battlegrid.
+- **InsertShipsForms**
+    - Creates a message consisting of multiple InsertShipsForm's.
  - **MakeMoveForm**
-    - Inbound make move form (user_name, move).
+    - Inbound make move form (user_name, target_row, target_col).
  - **ScoreForm**
     - Representation of a completed game's Score (date, winner, loser).
  - **ScoreForms**
