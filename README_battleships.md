@@ -219,6 +219,9 @@ but everything seems to work.
     - Path: 'game/{urlsafe_game_key}'
     - Method: GET
     - Parameters: urlsafe_game_key
-    - Returns: StringMessage containing history
-    - Description: Returns the move history of a game as a stringified list of 
-    tuples in the form (square, symbol) eg: [(0, 'X'), (4, 'O')]
+    - Returns: StringMessage containing history dictionaries.
+    - Description: Returns the move history of a game as a stringified dictionary,
+    which contains two keys: grid_1 and grid_2. Each of these keys has an associated
+    list of tuples detailing the game history in the form: 
+    (row, col, hit_or_miss_message) 
+    eg: { 'grid_1' : [(1, 3, 'You hit a ship!''), (5, 6, 'No ship hit!')], ..}
