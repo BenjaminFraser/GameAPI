@@ -85,6 +85,6 @@ class SendMoveEmail(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/crons/send_reminder', SendReminderEmail),
-    ('/tasks/cache_average_attempts', UpdateAverageMovesRemaining),
+    ('/tasks/cache_ships_remaining', UpdateGameShipsRemaining),
     ('/tasks/send_move_email', SendMoveEmail),
 ], debug=True)
