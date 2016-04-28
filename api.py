@@ -36,8 +36,6 @@ INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
 USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
                                            email=messages.StringField(2))
 
-MEMCACHE_MOVES_REMAINING = 'MOVES_REMAINING'
-
 MEMCACHE_USER_SHIPS_REMAINING = 'SHIPS_REMAINING'
 
 @endpoints.api(name='battleships', version='v1')
@@ -392,18 +390,6 @@ class BattleshipsAPI(remote.Service):
     def get_average_attempts(self, request):
         """Get the cached average moves remaining"""
         return StringMessage(message=memcache.get(MEMCACHE_MOVES_REMAINING) or '')
-
-    @staticmethod
-    def _cache_average_attempts():
-        """Populates memcache with the average moves remaining of Games"""
-        games = Game.query(Game.game_over == False).fetch()
-        if games:
-            count = len(games)
-            total_attempts_remaining = sum([game.attempts_remaining
-                                        for game in games])
-            average = float(total_attempts_remaining)/count
-            memcache.set(MEMCACHE_MOVES_REMAINING,
-                         'The average moves remaining is {:.2f}'.format(average))
 
     @staticmethod
     def _cache_ships_remaining():

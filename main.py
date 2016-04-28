@@ -54,12 +54,6 @@ class SendReminderEmail(webapp2.RequestHandler):
                                body)
 
 
-class UpdateAverageMovesRemaining(webapp2.RequestHandler):
-    def post(self):
-        """Update game listing announcement in memcache."""
-        BattleshipsAPI._cache_average_attempts()
-        self.response.set_status(204)
-
 class UpdateGameShipsRemaining(webapp2.RequestHandler):
     def post(self):
         """Update the ships remaining for users in current games in progress."""
