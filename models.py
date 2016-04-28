@@ -43,9 +43,9 @@ class Game(ndb.Model):
     """Game object"""
     grid_1 = ndb.PickleProperty(required=True)
     grid_2 = ndb.PickleProperty(required=True)
-    ships_1 = ndb.PickleProperty(required=True)
-    ships_2 = ndb.PickleProperty(required=True)
-    loc_ships_1 = ndb.PickleProperty(required=True)
+    ships_1 = ndb.PickleProperty(required=True) # dict of user 1's current ships
+    ships_2 = ndb.PickleProperty(required=True) 
+    loc_ships_1 = ndb.PickleProperty(required=True) # locations of user 1's ships
     loc_ships_2 = ndb.PickleProperty(required=True)
     next_move = ndb.KeyProperty(required=True) # The User's whose turn it is
     user_1 = ndb.KeyProperty(required=True, kind='User')

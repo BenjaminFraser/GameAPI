@@ -60,6 +60,12 @@ class UpdateAverageMovesRemaining(webapp2.RequestHandler):
         BattleshipsAPI._cache_average_attempts()
         self.response.set_status(204)
 
+class UpdateGameShipsRemaining(webapp2.RequestHandler):
+    def post(self):
+        """Update the ships remaining for users in current games in progress."""
+        BattleshipsAPI._cache_ships_remaining()
+        self.response.set_status(204)
+
 class SendMoveEmail(webapp2.RequestHandler):
     def post(self):
         """Send an email to a User that it is their turn"""
