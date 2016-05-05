@@ -56,7 +56,7 @@ class SendReminderEmail(webapp2.RequestHandler):
 
 class UpdateGameShipsRemaining(webapp2.RequestHandler):
     def post(self):
-        """Update the ships remaining for users in current games in progress."""
+        """Update the ships remaining for users with current games in progress."""
         BattleshipsAPI._cache_ships_remaining()
         self.response.set_status(204)
 

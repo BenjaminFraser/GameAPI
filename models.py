@@ -75,6 +75,7 @@ class Game(ndb.Model):
                         'submarine' : [], 'destroyer' : [],
                         'patrol boat' : [] }
         game.loc_ships_1 = game.loc_ships_2 = empty_locs
+        # Set initial empty history dict for game.
         game.history = {'grid_1' : [], 'grid_2' : []}
         game.put()
         return game
@@ -82,6 +83,7 @@ class Game(ndb.Model):
     def total_ships(self, grid=1):
         """Return the total number of ships on the selected BattleGrid instance."""
         if grid is 1:
+            # Sum of the ships dict values.
             return sum(self.ships_1.values())
         else:
             return sum(self.ships_2.values())
@@ -401,6 +403,9 @@ class MakeMoveForm(messages.Message):
     target_row = messages.IntegerField(2, required=True)
     target_col = messages.IntegerField(3, required=True)
 
+class GridAttackForm(messages.Message):
+    """Used to request a users current attacks on an opponents grid"""
+    user_number = messages.IntegerField(1, required=True)
 
 class ScoreForm(messages.Message):
     """ScoreForm for outbound Score information"""

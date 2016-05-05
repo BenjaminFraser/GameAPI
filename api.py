@@ -7,7 +7,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Game, Score
 from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms, GameForms, UserForm, UserForms, InsertShipsForms
+    ScoreForms, GameForms, UserForm, UserForms, InsertShipsForms, GridAttackForm
 from utils import get_by_urlsafe
 
 # Fields for conference query options.
@@ -27,6 +27,10 @@ GET_GAME_REQUEST = endpoints.ResourceContainer(
 
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     MakeMoveForm,
+    urlsafe_game_key=messages.StringField(1),)
+
+GRID_ATTACKS_REQUEST = endpoints.ResourceContainer(
+    GridAttackForm,
     urlsafe_game_key=messages.StringField(1),)
 
 INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
@@ -359,6 +363,27 @@ class BattleshipsAPI(remote.Service):
         if not game:
             raise endpoints.NotFoundException('Game not found')
         return StringMessage(message=str(game.history))
+
+    @endpoints.method(request_message=GRID_ATTACKS_REQUEST,
+                      response_message=StringMessage,
+                      path='game/{urlsafe_game_key}/attacks',
+                      name='get_game_attacks',
+                      http_method='POST')
+    def get_game_attacks(self, request):
+        """Return a Game's grid attacks for both player 1 and player 2"""
+        game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        user_num = int(request.user_number)
+        # verify requested user number is either 1 or 2.
+        if user_num != 1 and user_num != 2:
+            raise endpoints.BadRequestException('User number must be 1 or 2!')
+        # set user grid as appropriate.
+        grid = 'grid_2' if request.user_number == 1 else 'grid_1'
+        if not game:
+            raise endpoints.NotFoundException('Game not found')
+        # format the grid strings so that no user ships are displayed, only attacks.
+        shipfree_grid = str(getattr(game, grid)).replace('+', '-')
+        msg = ("The enemy grid is currently like so: {0}".format(shipfree_grid))
+        return StringMessage(message=msg)
 
     @endpoints.method(response_message=ScoreForms,
                       path='scores',

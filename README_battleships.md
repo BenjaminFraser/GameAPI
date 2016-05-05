@@ -47,11 +47,11 @@ all of the opponents ships first is the winner of the match.
  
 
 ##Files Included:
- - api.py: Contains endpoints and game playing logic.
+ - api.py: Contains endpoints and game playing logic and functions.
  - app.yaml: App configuration.
  - cron.yaml: Cronjob configuration.
  - main.py: Handler for taskqueue handler.
- - models.py: Entity and message definitions including helper methods.
+ - models.py: Entity and message definitions including many helper methods.
  - utils.py: Helper function for retrieving ndb.Models by urlsafe Key string.
 
 ##Endpoints Included:
