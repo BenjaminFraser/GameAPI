@@ -63,7 +63,6 @@ class UpdateGameShipsRemaining(webapp2.RequestHandler):
 class SendMoveEmail(webapp2.RequestHandler):
     def post(self):
         """Send an email to a User that it is their turn"""
-        logging.debug('HEREERERER"')
         user = get_by_urlsafe(self.request.get('user_key'), User)
         game = get_by_urlsafe(self.request.get('game_key'), Game)
         subject = 'It\'s your turn!'

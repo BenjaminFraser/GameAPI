@@ -342,6 +342,10 @@ class BattleshipsAPI(remote.Service):
                           params={'user_key': game.next_move.urlsafe(),
                                    'game_key': game.key.urlsafe()})
 
+            # update memcache with user ships remaining
+            taskqueue.add(url='/tasks/cache_ships_remaining',
+                          params=None)
+
         target_hit_msg = 'You hit a ship! Well done!'
         target_miss_msg = 'No ship hit! Better luck next time!'
         # create a message to notify the player that they hit or missed.
@@ -429,7 +433,7 @@ class BattleshipsAPI(remote.Service):
                 ships_1, ships_2 = game.total_ships(grid=1), game.total_ships(grid=2)
                 user_1, user_2 = game.user_1.get().name, game.user_2.get().name
                 msg = ("Game key {0}, user 1 is {1} with {2} ships, user 2 is {3} "
-                        "with {4} ships.".format(websafe_game_key, user_1, ships_1, user_2, ships2))
+                        "with {4} ships.".format(websafe_game_key, user_1, ships_1, user_2, ships_2))
                 ship_game_data.append(msg)
             memcache.set(MEMCACHE_USER_SHIPS_REMAINING,
                          'The current games in progress, along with the number of ships '
