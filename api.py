@@ -409,12 +409,12 @@ class BattleshipsAPI(remote.Service):
         return ScoreForms(items=[score.to_form() for score in scores])
 
     @endpoints.method(response_message=StringMessage,
-                      path='games/average_attempts',
-                      name='get_average_attempts_remaining',
+                      path='games/ships_remaining',
+                      name='get_ships_remaining',
                       http_method='GET')
-    def get_average_attempts(self, request):
-        """Get the cached average moves remaining"""
-        return StringMessage(message=memcache.get(MEMCACHE_MOVES_REMAINING) or '')
+    def get_ships_remaining(self, request):
+        """Get the cached ships remaining for each current game"""
+        return StringMessage(message=memcache.get(MEMCACHE_USER_SHIPS_REMAINING) or '')
 
     @staticmethod
     def _cache_ships_remaining():
