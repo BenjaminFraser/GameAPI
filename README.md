@@ -8,6 +8,8 @@
 1.  (Optional) Generate your client library(ies) with the endpoints tool.
  Deploy your application.
  
+--------
+
  
 ## Game Description:
 Battleships is a simple two player game. Game instructions are available
@@ -45,6 +47,8 @@ all of the opponents ships first is the winner of the match.
  and is then positioned using the orientation field, by entering 'vertical' or
  'horizontal'.
 
+--------
+
 
  ## Game Instructions - with no Front-end client:
  In order to play a game of Battleships with no front-end client, you must use the Google App Engine API explorer to manually carry out game commands and functions. Once you have the API explorer up and running, carrying out the following actions:
@@ -60,6 +64,8 @@ all of the opponents ships first is the winner of the match.
 6. The Game key is then stored as a Score entity, with details of the winner and looser of the game.
 7. Player high scores are calculated using the number of wins and the total number of matches played by each player.
 
+--------
+
 
 ## Files Included:
  - api.py: Contains endpoints and game playing logic and functions.
@@ -69,6 +75,9 @@ all of the opponents ships first is the winner of the match.
  - models.py: Entity and message definitions including many helper methods.
  - utils.py: Helper function for retrieving ndb.Models by urlsafe Key string.
  - design.txt: documentation explaining the design decisions made for the project.
+
+--------
+
 
 ## Endpoints Included:
  - **create_user**
@@ -155,6 +164,9 @@ all of the opponents ships first is the winner of the match.
     - Returns: StringMessage
     - Description: Get the cached ships remaining for each current game in progress.
 
+--------
+
+
 ## Models Included:
  - **User**
     - Stores unique user_name and (optional) email address.
@@ -172,6 +184,8 @@ all of the opponents ships first is the winner of the match.
  - **Score**
     - Records completed games. Associated with Users model via KeyProperty as
     well.
+
+--------
     
 ## Forms Included:
  - **GameForm**
@@ -196,8 +210,11 @@ all of the opponents ships first is the winner of the match.
  - **StringMessage**
     - General purpose String container.
     
+--------
+
     
 ## Design Decisions
+
 - Creating a means to store a grid for each players battleships was an interesting choice, and I ended up choosing a PickleProperty. I chose this since it allowed me to store a two dimensional list, which was both a simple and an effective means of storing a grid state that changes after each turn. Through using a PickleProperty, it meant I could easily change the state of a grid cell(s) through using various Game class methods, which is a much easier approach than parsing a string representation of the same game grid. 
 - Along with using next_move, user_1, user_2 and winner (all KeyProperty) to keep track of users and the next move, I also added a ships_1, ships_2, loc_ships_1 and loc_ships_2 to the Game model to help the game mechanics. The ships_1 and ships_2 fields are Python dictionaries that keep track of the current ships on a players field after each turn. Each dict key is a ship type, with an integer as its value, corresponding to how many of those ships there are currently on the players grid. loc_ships_1 and loc_ships_2 are both Python dictionaries that store the grid cells occupied by each ship type on a players grid. This design means that it is possible to work out whether a ship is partially destroyed, or completely destroyed from a players grid. The design of these four PickleProperty's could have been collated into 1 or 2 PickleProperty's through using a Python dict within a dict, however I decided that this adds too much complexity and potential for input error, so I decided against it and went with the simple approach.
 - I made extensive use of Game class methods within `models.py`, rather than external helper functions within `api.py`. I decided to do this since it made applying changes and updates to my game fields much easier than it would have been querying the Datastore model each time in api.py. It also made my endpoints methods and helper functions within the `api.py` file more abstract and less prone to error, since they can carry out all game functionality using the Game class methods, rather than directly altering the game entities properties. 
@@ -211,6 +228,9 @@ tic-tac-toe because there's no way to automatically partition each row with a
 1-d array. Also the winner checking logic is very hard-coded. 
 I don't feel great about the logic to track which player's turn it is, 
 but everything seems to work.
+
+--------
+
 
 ## Additional endpoints
  - **get_user_games**
@@ -260,3 +280,23 @@ but everything seems to work.
     - Parameters: None
     - Returns: StringMessage
     - Description: Get the cached ships remaining for each current game in progress. This is carried out each time a player makes a game move within any game.
+
+--------
+
+
+## To-do for the future:
+
+- Implement a full front end for the Battleships game, that makes use of the Datastore entities and provides an interface to use the API endpoints methods.
+- Create a secure login system by implementing OAuth 2.0 and G+/Facebook.
+
+--------
+
+
+## CREATOR 
+
+Benjamin Fraser
+
+Credit to Udacity for the skeleton Python Google App Engine code.
+Built using Python and Google App Engine.
+
+--------
