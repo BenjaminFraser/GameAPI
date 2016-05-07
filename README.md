@@ -257,4 +257,4 @@ but everything seems to work.
     - Mathod: GET
     - Parameters: None
     - Returns: StringMessage
-    - Description: Get the cached ships remaining for each current game in progress.
+    - Description: Get the cached ships remaining for each current game in progress. This is carried out each time a player makes a game move within any game.
