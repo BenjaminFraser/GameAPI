@@ -13,7 +13,7 @@
 Battleships is a simple two player game. Game instructions are available
 [here](https://en.wikipedia.org/wiki/Battleship_(game)).
 
-Each players grid is represented as a two dimensional array of 100 squares, consisting of 10 
+Each players grid is represented as a two dimensional list of 100 squares, consisting of 10 
 rows and 10 columns. When initialised, the grid is as follows:
 
 [['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
@@ -196,13 +196,12 @@ all of the opponents ships first is the winner of the match.
     
     
 ## Design Decisions
-- I added a field to store the board in Game. I used PickleProperty because it allowed
-me to store a Python List in the datastore which seemed like the simplest way
-to record the state of the board.
-- I also added next_move, user_x, user_o, and winner (all KeyProperty) to the Game
-model to keep track of which User was either 'X' or 'O' and who's move it was.
-- I used a 'game_over' flag as well to mark completed games.
-- I modified the Score model to record which player won and lost each game.
+- Creating a means to store a grid for each players battleships was an interesting choice, and I ended up choosing a PickleProperty. I chose this since it allowed me to store a two dimensional list, which was both a simple and an effective means of storing a grid state that changes after each turn. Through using a PickleProperty, it meant I could easily change the state of a grid cell(s) through using various Game class methods, which is a much easier approach than parsing a string representation of the same game grid. 
+- Along with using next_move, user_1, user_2 and winner (all KeyProperty) to keep track of users and the next move, I also added a ships_1, ships_2, loc_ships_1 and loc_ships_2 to the Game model to help the game mechanics. The ships_1 and ships_2 fields are Python dictionaries that keep track of the current ships on a players field after each turn. Each dict key is a ship type, with an integer as its value, corresponding to how many of those ships there are currently on the players grid. loc_ships_1 and loc_ships_2 are both Python dictionaries that store the grid cells occupied by each ship type on a players grid. This design means that it is possible to work out whether a ship is partially destroyed, or completely destroyed from a players grid. The design of these four PickleProperty's could have been collated into 1 or 2 PickleProperty's through using a Python dict within a dict, however I decided that this adds too much complexity and potential for input error, so I decided against it and went with the simple approach.
+- I made extensive use of Game class methods within `models.py`, rather than external helper functions within `api.py`. I decided to do this since it made applying changes and updates to my game fields much easier than it would have been querying the Datastore model each time in api.py. It also made my endpoints methods and helper functions within the `api.py` file more abstract and less prone to error, since they can carry out all game functionality using the Game class methods, rather than directly altering the game entities properties. 
+- I created helper functions within `api.py` for inserting ships into a users battlegrid, as a means of making the endpoint method code much easier to understand and follow. 
+- I made use of a 'game_over' flag to mark completed games in the Datastore.
+- I modified the Score model to record which player won and lost each game, as a means of more easily obtaining user statistics.
 
 The 1-d list to represent the board was the simplest solution I could think of, 
 but it would make it very hard to scale the game to 4x4 or nxn versions of 
