@@ -57,6 +57,8 @@ all of the opponents ships first is the winner of the match.
     - A first column, which is the very top ship cell column if vertical, or the very left cell column if horizontal
 4. The game can now be started, with user 1 making a move using the make_move endpoint. The players name, along with target row and target column to attack must be entered in order to make a move. 
 5. Players alternate turns using the make_move endpoint, until one player no longer has any ship cells remaining, at which point the game ends.
+6. The Game key is then stored as a Score entity, with details of the winner and looser of the game.
+7. Player high scores are calculated using the number of wins and the total number of matches played by each player.
 
 
 ## Files Included:
@@ -232,7 +234,7 @@ but everything seems to work.
     - Parameters: None
     - Returns: UserForms
     - Description: Rank all players that have played at least one game by their
-    winning percentage and return.
+    winning percentage, calculated by the number of wins and total matches, and return.
 
  - **get_game_history**
     - Path: 'game/{urlsafe_game_key}'
