@@ -249,7 +249,15 @@ class BattleshipsAPI(remote.Service):
                       name='get_game',
                       http_method='GET')
     def get_game(self, request):
-        """Return the current game state."""
+        """Return the current game state using the urlsafe_game_key. Raises an exception
+            if the game cannot be found based on the urlsafe_game_key.
+        Args:
+            request: request object containing urlsafe_game_key
+        Returns:
+            A GameForm representation of the selected game
+        Raises:
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
             return game.to_form()
@@ -262,7 +270,15 @@ class BattleshipsAPI(remote.Service):
                       name='get_user_games',
                       http_method='GET')
     def get_user_games(self, request):
-        """Return all User's active games"""
+        """Return all a selected User's active games. If no user is found
+            within the database an endpoints exception is raised
+        Args:
+            request: request object containing user name and email input data
+        Returns:
+            GameForms message with all the queried user games as GameForm messages
+        Raises:
+            endpoints.BadRequestException
+        """
         user = User.query(User.name == request.user_name).get()
         if not user:
             raise endpoints.BadRequestException('User not found!')
@@ -277,7 +293,16 @@ class BattleshipsAPI(remote.Service):
                       name='cancel_game',
                       http_method='DELETE')
     def cancel_game(self, request):
-        """Delete a game. Game must not have ended to be deleted"""
+        """Delete a game. Game must not have already ended in order to be deleted. Raises
+            an endpoints exception if either the game is over or the game is not found.
+        Args:
+            request: request containing urlsafe_game_key
+        Returns:
+            A StringMessage informing deletion of the selected game
+        Raises:
+            endpoints.BadRequestException
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game and not game.game_over:
             game.key.delete()
@@ -294,7 +319,9 @@ class BattleshipsAPI(remote.Service):
                       name='make_move',
                       http_method='PUT')
     def make_move(self, request):
-        """Makes a move. Returns a game state with message
+        """Makes a move by updating the users attack on the opponents battlegrid. Returns a game 
+            state with message based on outcome. Ends the game using the game method end_game() 
+            if a user destroys all an opponents ships.
         Args: 
             request: contains the urlsafegamekey and MakeMoveForm user input data, which
                      consists of user_name, target_row and target_col
