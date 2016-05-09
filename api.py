@@ -86,8 +86,8 @@ class BattleshipsAPI(remote.Service):
             returns a gameform representation of the created game, using the game instance
             to_form() method.
         Raises:
-            endpoints.NotFoundException:"""
-
+            endpoints.NotFoundException:
+        """
         user_1 = User.query(User.name == request.user_1).get()
         user_2 = User.query(User.name == request.user_2).get()
         if not user_1 and user_2:
@@ -294,7 +294,17 @@ class BattleshipsAPI(remote.Service):
                       name='make_move',
                       http_method='PUT')
     def make_move(self, request):
-        """Makes a move. Returns a game state with message"""
+        """Makes a move. Returns a game state with message
+        Args: 
+            request: contains the urlsafegamekey and MakeMoveForm user input data, which
+                     consists of user_name, target_row and target_col
+        Returns:
+            A StringMessage indicating either the outcome of the attack or that the game is
+            over.
+        Raises:
+            endpoints.NotFoundException
+            endpoints.BadRequestException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if not game:
             raise endpoints.NotFoundException('Game not found')
@@ -385,7 +395,17 @@ class BattleshipsAPI(remote.Service):
                       name='get_game_attacks',
                       http_method='PUT')
     def get_game_attacks(self, request):
-        """Return a Game's grid attacks for both player 1 and player 2"""
+        """Return a Game's grid attacks for both player 1 and player 2
+        Args:
+            request: a request object containing the urlsafegamekey and the grid attacks
+                     request input data, consisting of user_number (1 or 2)
+        Returns:
+            A StringMessage that displays a string representation of the selected 
+            users opponents game grid
+        Raises:
+            endpoints.BadRequestException
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         user_num = int(request.user_number)
         # verify requested user number is either 1 or 2.
@@ -405,7 +425,13 @@ class BattleshipsAPI(remote.Service):
                       name='get_scores',
                       http_method='GET')
     def get_scores(self, request):
-        """Return all scores"""
+        """Return all scores records for the game from Datastore. The results
+            are unordered.
+        Args: 
+            request: the request object
+        Returns:
+            ScoreForms object, containing the individual score records from Datastore
+        """
         return ScoreForms(items=[score.to_form() for score in Score.query()])
 
     @endpoints.method(request_message=USER_REQUEST,
@@ -414,7 +440,14 @@ class BattleshipsAPI(remote.Service):
                       name='get_user_scores',
                       http_method='GET')
     def get_user_scores(self, request):
-        """Returns all of an individual User's scores"""
+        """Returns all of an individual User's scores
+        Args:
+            request: the request object
+        Returns:
+            A ScoreForms object, containing the users individual ScoreForm messages
+        Raises:
+            endpoints.NotFoundException
+        """
         user = User.query(User.name == request.user_name).get()
         if not user:
             raise endpoints.NotFoundException(
@@ -428,7 +461,13 @@ class BattleshipsAPI(remote.Service):
                       name='get_ships_remaining',
                       http_method='GET')
     def get_ships_remaining(self, request):
-        """Get the cached ships remaining for each current game"""
+        """Get the cached ships remaining for each current game
+        Args:
+            request: the request object
+        Returns:
+            A StringMessage object, containing the stored memcache entry or an empty
+            string if no message exists.
+        """
         return StringMessage(message=memcache.get(MEMCACHE_USER_SHIPS_REMAINING) or '')
 
     @staticmethod

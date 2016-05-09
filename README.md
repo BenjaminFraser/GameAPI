@@ -18,7 +18,7 @@ Battleships is a simple two player game. Game instructions are available
 Each players grid is represented as a two dimensional list of 100 squares, consisting of 10 
 rows and 10 columns. When initialised, the grid is as follows:
 
-[['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
+```[['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
@@ -28,6 +28,7 @@ rows and 10 columns. When initialised, the grid is as follows:
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-'], 
 ['-', '-', '-', '-', '-', '-', '-', '-', '-', '-']]
+```
 
 - Each cell is labelled as '-', which signifies an empty cell. 
 - When a ship is inserted into the grid, it is represented by a series of cells marked as '+'.
