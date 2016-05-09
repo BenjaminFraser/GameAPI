@@ -1,4 +1,3 @@
-import logging
 import endpoints
 from protorpc import remote, messages
 from google.appengine.api import memcache
