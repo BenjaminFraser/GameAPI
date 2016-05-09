@@ -222,13 +222,6 @@ all of the opponents ships first is the winner of the match.
 - I made use of a 'game_over' flag to mark completed games in the Datastore.
 - I modified the Score model to record which player won and lost each game, as a means of more easily obtaining user statistics.
 
-The 1-d list to represent the board was the simplest solution I could think of, 
-but it would make it very hard to scale the game to 4x4 or nxn versions of 
-tic-tac-toe because there's no way to automatically partition each row with a 
-1-d array. Also the winner checking logic is very hard-coded. 
-I don't feel great about the logic to track which player's turn it is, 
-but everything seems to work.
-
 --------
 
 

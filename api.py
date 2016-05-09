@@ -76,7 +76,18 @@ class BattleshipsAPI(remote.Service):
                       name='new_game',
                       http_method='POST')
     def new_game(self, request):
-        """Creates new game"""
+        """Creates new game with the requested user 1 and user 2 names. Checks the 
+            datastore to ensure players with those names specified exist. If an 
+            input name does not correspond to a registered player an endpoints
+            NotFoundException is raised.
+        Args:
+            request: contains the requested message, including user 1 and user 2 input names
+        Returns:
+            returns a gameform representation of the created game, using the game instance
+            to_form() method.
+        Raises:
+            endpoints.NotFoundException:"""
+
         user_1 = User.query(User.name == request.user_1).get()
         user_2 = User.query(User.name == request.user_2).get()
         if not user_1 and user_2:
@@ -92,7 +103,7 @@ class BattleshipsAPI(remote.Service):
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/user_1_ships',
                       name='user_1_ships',
-                      http_method='POST')
+                      http_method='PUT')
     def insert_user_1_ships(self, request):
         """Inserts user 1 ships into the Game grid 1"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
@@ -120,7 +131,7 @@ class BattleshipsAPI(remote.Service):
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/user_2_ships',
                       name='user_2_ships',
-                      http_method='POST')
+                      http_method='PUT')
     def insert_user_2_ships(self, request):
         """Inserts user 2 ships into the Game grid 2"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
@@ -211,17 +222,17 @@ class BattleshipsAPI(remote.Service):
             # verify that the ship will fit into the battle grid based on input.
             if int(first_row_int) < limit:
                 retval, message = True, None
-                return True, message
+                return retval, message
             # if not set retval false and message for out of bounds input location.
             else:
                 retval = False
                 message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
-                return False, message
+                return retval, message
         elif vertical == False:
             # verify that horizontal location is within the grid limits.
             if int(first_col_int) < limit:
                 retval, message = True, None
-                return True, message
+                return retval, message
             # if not raise ValueError for out of bounds input horizontal location.
             else:
                 retval = False
@@ -372,7 +383,7 @@ class BattleshipsAPI(remote.Service):
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/attacks',
                       name='get_game_attacks',
-                      http_method='POST')
+                      http_method='PUT')
     def get_game_attacks(self, request):
         """Return a Game's grid attacks for both player 1 and player 2"""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
