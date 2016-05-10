@@ -7,7 +7,7 @@ from google.appengine.api import taskqueue
 from models import User, Score
 from models import StringMessage, MakeMoveForm,\
     ScoreForms, UserForm, UserForms, InsertShipsForms
-from game import Game, GameForm, GameForms, NewGameForm
+from game_models import Game, GameForm, GameForms, NewGameForm
 from utils import get_by_urlsafe
 
 # Fields for conference query options.
