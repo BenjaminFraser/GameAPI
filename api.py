@@ -6,7 +6,7 @@ from google.appengine.api import taskqueue
 
 from models import User, Score
 from models import StringMessage, MakeMoveForm,\
-    ScoreForms, UserForm, UserForms, InsertShipsForms, GridAttackForm
+    ScoreForms, UserForm, UserForms, InsertShipsForms
 from game import Game, GameForm, GameForms, NewGameForm
 from utils import get_by_urlsafe
 
@@ -19,7 +19,6 @@ SHIP_TYPES =    [
             'patrol boat'
             ]
 
-
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 
 GET_GAME_REQUEST = endpoints.ResourceContainer(
@@ -30,8 +29,8 @@ MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1),)
 
 GRID_ATTACKS_REQUEST = endpoints.ResourceContainer(
-    GridAttackForm,
-    urlsafe_game_key=messages.StringField(1),)
+    user_number=messages.StringField(1),
+    urlsafe_game_key=messages.StringField(2),)
 
 INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
     InsertShipsForms,
@@ -69,6 +68,7 @@ class BattleshipsAPI(remote.Service):
         return StringMessage(message='User {} created!'.format(
                 request.user_name))
 
+
     @endpoints.method(response_message=UserForms,
                       path='user/ranking',
                       name='get_user_rankings',
@@ -83,6 +83,7 @@ class BattleshipsAPI(remote.Service):
         users = User.query(User.total_played > 0).fetch()
         users = sorted(users, key=lambda x: x.win_percentage, reverse=True)
         return UserForms(items=[user.to_form() for user in users])
+
 
     @endpoints.method(request_message=NEW_GAME_REQUEST,
                       response_message=GameForm,
@@ -119,7 +120,20 @@ class BattleshipsAPI(remote.Service):
                       name='user_1_ships',
                       http_method='PUT')
     def insert_user_1_ships(self, request):
-        """Inserts user 1 ships into the Game grid 1"""
+        """Inserts user 1 ships into the Game entity grid 1 field. Takes in multiple
+            Message objects through a GameForms request object. Makes use of the
+            _formatShipInserts(ships) and game class insert_user_ships(ships) methods. 
+            Raises an exception if no game is found, a player has already inserted ships
+            or the ship insert data is invalid.
+        Args:
+            request: the request object containing the urlsafe_game_key and ship messages
+                        within a GameForms object. 
+        Returns:
+            A StringMessage alerting the user that the ships were inserted.
+        Raises:
+            endpoints.BadRequestException
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
             # retrieve multiple ship insert forms and format the data into
@@ -141,13 +155,27 @@ class BattleshipsAPI(remote.Service):
         else:
             raise endpoints.NotFoundException('Game not found!')
 
+
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/user_2_ships',
                       name='user_2_ships',
                       http_method='PUT')
     def insert_user_2_ships(self, request):
-        """Inserts user 2 ships into the Game grid 2"""
+        """Inserts user 2 ships into the Game entity grid 2 field. Takes in multiple
+            Message objects through a GameForms request object. Makes use of the
+            _formatShipInserts(ships) and game class insert_user_ships(ships) methods. 
+            Raises an exception if no game is found, a player has already inserted ships
+            or the ship insert data is invalid.
+        Args:
+            request: the request object containing the urlsafe_game_key and ship messages
+                        within a GameForms object. 
+        Returns:
+            A StringMessage alerting the user that the ships were inserted.
+        Raises:
+            endpoints.BadRequestException
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
             # retrieve multiple ship insert forms and format the data into
@@ -166,6 +194,7 @@ class BattleshipsAPI(remote.Service):
                 raise endpoints.BadRequestException('Player 2 has already inserted ships!')
         else:
             raise endpoints.NotFoundException('Game not found!')
+
 
     def _formatShipInserts(self, ships):
         """Parse, check validity and format ship insert data into an appropriate dict.
@@ -220,8 +249,6 @@ class BattleshipsAPI(remote.Service):
 
         return formatted_ships
 
-        # ensure that the ship insert data is within limits for each ship type and start locations.
-        # create a helper function _shipInsertPosnValid(self, ship_type, start_row, start_col, orientation)
 
     def _shipInsertPosnValid(self, ship_type, first_row_int, first_col_int, vertical=True):
         """Checks the validatity of the ships starting co-ordinates and characteristics.
@@ -330,6 +357,7 @@ class BattleshipsAPI(remote.Service):
             filter(Game.game_over == False)
         return GameForms(items=[game.to_form() for game in games])
 
+
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}',
@@ -355,6 +383,7 @@ class BattleshipsAPI(remote.Service):
             raise endpoints.BadRequestException('Game is already over!')
         else:
             raise endpoints.NotFoundException('Game not found!')
+
 
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=StringMessage,
@@ -447,6 +476,7 @@ class BattleshipsAPI(remote.Service):
         game.put()
         return StringMessage(message=ret_msg)
 
+
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/history',
@@ -468,6 +498,7 @@ class BattleshipsAPI(remote.Service):
         if not game:
             raise endpoints.NotFoundException('Game not found')
         return StringMessage(message=str(game.history))
+
 
     @endpoints.method(request_message=GRID_ATTACKS_REQUEST,
                       response_message=StringMessage,
@@ -500,6 +531,7 @@ class BattleshipsAPI(remote.Service):
         msg = ("The enemy grid is currently like so: {0}".format(shipfree_grid))
         return StringMessage(message=msg)
 
+
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
                       name='get_scores',
@@ -513,6 +545,7 @@ class BattleshipsAPI(remote.Service):
             ScoreForms object, containing the individual score records from Datastore
         """
         return ScoreForms(items=[score.to_form() for score in Score.query()])
+
 
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=ScoreForms,
@@ -536,6 +569,7 @@ class BattleshipsAPI(remote.Service):
                                     Score.loser == user.key))
         return ScoreForms(items=[score.to_form() for score in scores])
 
+
     @endpoints.method(response_message=StringMessage,
                       path='games/ships_remaining',
                       name='get_ships_remaining',
@@ -549,6 +583,7 @@ class BattleshipsAPI(remote.Service):
             string if no message exists.
         """
         return StringMessage(message=memcache.get(MEMCACHE_USER_SHIPS_REMAINING) or '')
+
 
     @staticmethod
     def _cache_ships_remaining():

@@ -69,11 +69,6 @@ class MakeMoveForm(messages.Message):
     target_col = messages.IntegerField(3, required=True)
 
 
-class GridAttackForm(messages.Message):
-    """Used to request a users current attacks on an opponents grid"""
-    user_number = messages.IntegerField(1, required=True)
-
-
 class ScoreForm(messages.Message):
     """ScoreForm for outbound Score information"""
     date = messages.StringField(1, required=True)
