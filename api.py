@@ -50,7 +50,16 @@ class BattleshipsAPI(remote.Service):
                       name='create_user',
                       http_method='POST')
     def create_user(self, request):
-        """Create a User. Requires a unique username"""
+        """Create a User. Requires a unique username, which is compared with the 
+        pre-existing names stored in the database. If the name is already taken an 
+        exception will be raised
+        Args:
+            request: the request object containing the chosen user name and email strings
+        Returns:
+            A StringMessage alerting the user that the user was successfully created
+        Raises:
+            endpoints.ConflictException
+        """
         if User.query(User.name == request.user_name).get():
             raise endpoints.ConflictException(
                     'A User with that name already exists!')
@@ -64,7 +73,12 @@ class BattleshipsAPI(remote.Service):
                       name='get_user_rankings',
                       http_method='GET')
     def get_user_rankings(self, request):
-        """Return all Users ranked by their win percentage"""
+        """Return all Users ranked by their win percentage.
+        Args:
+            request: the request object
+        Returns:
+            A UserForms object contaning the indivual UserForm objects for each user
+        """
         users = User.query(User.total_played > 0).fetch()
         users = sorted(users, key=lambda x: x.win_percentage, reverse=True)
         return UserForms(items=[user.to_form() for user in users])
@@ -153,7 +167,21 @@ class BattleshipsAPI(remote.Service):
             raise endpoints.NotFoundException('Game not found!')
 
     def _formatShipInserts(self, ships):
-        """Parse, check validity and format ship insert data into an appropriate dict"""
+        """Parse, check validity and format ship insert data into an appropriate dict.
+            Raises an exception if the ship type within the ships dict is incorrect, or
+            if the position data within the dict is invalid.
+        Args:
+            ships: the requested ships MessageField object, containing multiple message fields 
+                    for each input ship.
+        Returns:
+            The formatted ships in the form of a dictionary with ship type as the key, and
+            a list for each key containing start_row int, start_col int and the boolean 
+            vertical keyword, like the following example:
+            { 'aircraft carrier' : [1, 2, vertical=True], ... }
+        Raises:
+            ValueError
+            endpoints.BadRequestException
+        """
         formatted_ships = {}
 
         for ship in ships:
@@ -196,9 +224,24 @@ class BattleshipsAPI(remote.Service):
 
     def _shipInsertPosnValid(self, ship_type, first_row_int, first_col_int, vertical=True):
         """Checks the validatity of the ships starting co-ordinates and characteristics.
-           returns a tuple, consisting of a retval and a message. 
-                 - The retval is equal to True if the data is valid, and false if not.
-                 - The message gives an indication as to the problem is retal is false.
+           Returns a tuple, consisting of a retval and a message. retval is True to indicate
+           valid position data, and is false when not, along with a message indicating why.
+           Raises an exception if vertical is not True or False.
+        Args:
+            ship_type: The type of ship the user wants to insert. Must be of type str and
+                        equal to either 'aircraft carrier', 'battleship', 'destroyer', 
+                        'submarine' or 'battleship'
+            first_row_int: An integer between 0-9, representing the first row the ship
+                            shall occupy
+            first_col_int: An integer between 0-9, representing the first column the ship
+                            shall occupy
+            vertical: Must be of type boolean and equal to True or False. True by default
+        Returns:
+            A tuple, consisting of two objects: retval and message:
+                - The retval is equal to True if the data is valid, and false if not
+                - The message gives an indication as to the problem if retval is false
+        Raises:
+            ValueError
         """
         if ship_type == 'aircraft carrier':
             limit, size = 5, 5
@@ -409,7 +452,17 @@ class BattleshipsAPI(remote.Service):
                       name='get_game_history',
                       http_method='GET')
     def get_game_history(self, request):
-        """Return a Game's move history"""
+        """Return a Game's move history. The history is represented as a dict
+            with two values: grid_1 and grid_2. Each grid has a sequence
+            of tuples representing the moves carried out. Raises an endpoints exception
+            if the game cannot be found.
+        Args:
+            request: request object containing urlsafe_game_key
+        Returns:
+            A StringMessage containing a string representation of the history dict
+        Raises:
+            endpoints.NotFoundException
+        """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if not game:
             raise endpoints.NotFoundException('Game not found')
@@ -419,7 +472,7 @@ class BattleshipsAPI(remote.Service):
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/attacks',
                       name='get_game_attacks',
-                      http_method='PUT')
+                      http_method='GET')
     def get_game_attacks(self, request):
         """Return a Game's grid attacks for both player 1 and player 2
         Args:
