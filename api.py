@@ -4,9 +4,10 @@ from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
-from models import User, Game, Score
-from models import StringMessage, NewGameForm, GameForm, MakeMoveForm,\
-    ScoreForms, GameForms, UserForm, UserForms, InsertShipsForms, GridAttackForm
+from models import User, Score
+from models import StringMessage, MakeMoveForm,\
+    ScoreForms, UserForm, UserForms, InsertShipsForms, GridAttackForm
+from game import Game, GameForm, GameForms, NewGameForm
 from utils import get_by_urlsafe
 
 # Fields for conference query options.

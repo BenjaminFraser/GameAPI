@@ -1,3 +1,7 @@
+from protorpc import messages
+from google.appengine.ext import ndb
+
+
 class Game(ndb.Model):
     """Game object"""
     grid_1 = ndb.PickleProperty(required=True)
@@ -275,7 +279,6 @@ class Game(ndb.Model):
 
         return (user_1_win, user_2_win)
 
-
     def to_form(self):
         """Returns a GameForm representation of the Game"""
         form = GameForm(urlsafe_key=self.key.urlsafe(),
@@ -306,3 +309,30 @@ class Game(ndb.Model):
         # Update the user models
         winner.get().add_win()
         loser.get().add_loss()
+
+
+class GameForm(messages.Message):
+    """GameForm for outbound game state information"""
+    urlsafe_key = messages.StringField(1, required=True)
+    grid_1 = messages.StringField(2, required=True)
+    grid_2 = messages.StringField(3, required=True)
+    ships_1 = messages.StringField(4, required=True)
+    ships_2 = messages.StringField(5, required=True)
+    loc_ships_1 = messages.StringField(6, required=True)
+    loc_ships_2 = messages.StringField(7, required=True)
+    user_1 = messages.StringField(8, required=True)
+    user_2 = messages.StringField(9, required=True)
+    next_move = messages.StringField(10, required=True)
+    game_over = messages.BooleanField(11, required=True)
+    winner = messages.StringField(12)
+
+
+class GameForms(messages.Message):
+    """Container for multiple GameForm"""
+    items = messages.MessageField(GameForm, 1, repeated=True)
+
+
+class NewGameForm(messages.Message):
+    """Used to create a new game"""
+    user_1 = messages.StringField(1, required=True)
+    user_2 = messages.StringField(2, required=True)
