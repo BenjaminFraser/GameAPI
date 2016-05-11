@@ -11,7 +11,7 @@ from game_models import Game, GameForm, GameForms, NewGameForm
 from utils import get_by_urlsafe
 
 # Fields for conference query options.
-SHIP_TYPES =    [
+SHIP_TYPES = [
             'aircraft carrier',
             'battleship',
             'submarine',
@@ -22,7 +22,7 @@ SHIP_TYPES =    [
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 
 GET_GAME_REQUEST = endpoints.ResourceContainer(
-        urlsafe_game_key=messages.StringField(1),)
+    urlsafe_game_key=messages.StringField(1),)
 
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     MakeMoveForm,
@@ -36,10 +36,12 @@ INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
     InsertShipsForms,
     urlsafe_game_key=messages.StringField(1),)
 
-USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
-                                           email=messages.StringField(2))
+USER_REQUEST = endpoints.ResourceContainer(
+    user_name=messages.StringField(1),
+    email=messages.StringField(2))
 
 MEMCACHE_USER_SHIPS_REMAINING = 'SHIPS_REMAINING'
+
 
 @endpoints.api(name='battleships', version='v1')
 class BattleshipsAPI(remote.Service):
@@ -135,17 +137,16 @@ class BattleshipsAPI(remote.Service):
             endpoints.NotFoundException
         """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
+        # check game exists.
         if game:
-            # retrieve multiple ship insert forms and format the data into
-            # a dictionary with array values containing starting row, col and orientation.
-            # ensure ships have not already been inserted.
+            # ensure ships haven't already been added.
             if game.total_ship_cells(grid=1) == 0:
-                # uses _formatShipInsert helper function to validate 
-                # and create the dictionary Python objects.
+                # check validity of input ship data. Insert into game if valid.
                 try:
                     ship_data = self._formatShipInserts(request.ships)
                     game.insert_user_ships(ship_data)
                     game.put()
+                # raise exception with error message if the data is not valid.
                 except Exception as e:
                     msg = e
                     raise endpoints.BadRequestException(msg)
@@ -177,15 +178,16 @@ class BattleshipsAPI(remote.Service):
             endpoints.NotFoundException
         """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
-        if game:
-            # retrieve multiple ship insert forms and format the data into
-            # a dictionary with array values containing starting row, col and orientation.
-            # ensure ships have not already been inserted.
+        # check game exists.
+        if game:   
+            # ensure ships haven't already been added.
             if game.total_ship_cells(grid=2) == 0:
+                # check validity of input ship data. Insert into game if valid.
                 try:
                     ship_data = self._formatShipInserts(request.ships)
                     game.insert_user_ships(ship_data, user='user_2')
                     game.put()
+                # raise exception with error message if the data is not valid.
                 except Exception as e:
                     msg = e
                     raise endpoints.BadRequestException(msg)
@@ -217,23 +219,24 @@ class BattleshipsAPI(remote.Service):
         for ship in ships:
             # create a dict containing all the input ship data for the ship.
             ship_data = {field.name: getattr(ship, field.name) for field in ship.all_fields()}
-
             # ensure the ship type entered is of a valid type.
             ship_type = ship_data['ship_type'].lower()
+
             if ship_type not in SHIP_TYPES:
                 raise ValueError("Please enter a valid ship type. '{0}' is not valid! "
                                 "A ship can be one of either: aircraft carrier, battleship, "
                                  "submarine, destroyer or a patrol boat!".format(ship_type))
-
             # ensure more than one ship type is not being inserted into the grid.
+
             if ship_type in formatted_ships:
                 raise endpoints.BadRequestException('More than one ship type cannot be inserted! '
                             'You have tried to insert more than one {0}!'.format(ship_type))
 
             start_row, start_col = int(ship_data['start_row']), int(ship_data['start_column'])
-
+            # check whether orientation is horizontal or vertical.
             if ship_data['orientation'].lower().startswith('h'):
                 vertical = False
+
             else: 
                 # default to vertical orientation if horizontal not given.
                 vertical = True
@@ -241,9 +244,11 @@ class BattleshipsAPI(remote.Service):
             # check the validity of the given ship data using _shipInsertPosnValid helper.
             check_ship, msg = self._shipInsertPosnValid(ship_type, start_row, 
                                                         start_col, vertical)
+
+            # format the ship dict as appropriate if the ship data is valid.
             if check_ship:
                 formatted_ships[ship_type] = [start_row, start_col, vertical]
-                # process the ship using the created class method for insertion of a ship.
+
             else:
                 raise ValueError("There was a problem with a ship insert. {0}".format(msg))
 
@@ -298,6 +303,7 @@ class BattleshipsAPI(remote.Service):
                 retval = False
                 message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
                 return retval, message
+
         elif vertical == False:
             # verify that horizontal location is within the grid limits.
             if int(first_col_int) < limit:
@@ -308,6 +314,7 @@ class BattleshipsAPI(remote.Service):
                 retval = False
                 message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
                 return retval, message
+
         else:
             # raise exception for incorrect vertical keyword if not true or false.
             raise ValueError("The 'vertical' keyword must be True or False!")
@@ -331,6 +338,7 @@ class BattleshipsAPI(remote.Service):
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game:
             return game.to_form()
+
         else:
             raise endpoints.NotFoundException('Game not found!')
 
@@ -371,16 +379,20 @@ class BattleshipsAPI(remote.Service):
         Returns:
             A StringMessage informing deletion of the selected game
         Raises:
-            endpoints.BadRequestException
-            endpoints.NotFoundException
+            endpoints.BadRequestException: game is already over.
+            endpoints.NotFoundException: game not found.
         """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
+
+        # check to ensure the game is not already over.
         if game and not game.game_over:
             game.key.delete()
             return StringMessage(message='Game with key: {} deleted.'.
                                  format(request.urlsafe_game_key))
+
         elif game and game.game_over:
             raise endpoints.BadRequestException('Game is already over!')
+
         else:
             raise endpoints.NotFoundException('Game not found!')
 
@@ -405,15 +417,19 @@ class BattleshipsAPI(remote.Service):
             endpoints.BadRequestException
         """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
+
         if not game:
             raise endpoints.NotFoundException('Game not found')
+
         # ensure the game is not already over.
         if game.game_over:
             raise endpoints.NotFoundException('Game already over')
+
         # ensure that ships have been inserted onto both grids prior to a move.
         if game.total_ships(grid=1) == 0 or game.total_ships(grid=2) == 0:
             raise endpoints.BadRequestException('Both users must have inserted ships '
                                                 'prior to beginning the game.')
+
         # ensure the correct user is making a move.
         user = User.query(User.name == request.user_name).get()
         if user.key != game.next_move:
@@ -426,16 +442,20 @@ class BattleshipsAPI(remote.Service):
         target_grid = 2 if user_1 else 1
 
         row_loc, col_loc = int(request.target_row), int(request.target_col)
+
         # Verify move is valid
         if row_loc < 0 or row_loc > 9 or col_loc < 0 or col_loc > 9:
             raise endpoints.BadRequestException('Invalid move! Rows and columns must be '
                                                 'between 0 and 9')
+
         # check if grid cell is already destroyed.
         if game.return_grid_status(row_loc, col_loc, target_grid) == 'X':
             raise endpoints.BadRequestException('That grid cell is already destroyed! '
                                                 'Try picking another!')
+
         # check whether the move was a hit or miss.
         target_hit = game.destroy_cell(row_loc, col_loc, grid=target_grid)
+
         # Append a move to the relevant history dict key dependent on user and hit status.
         history_msg = 'Ship hit!' if target_hit else 'No ship hit!'
         history_entry = (row_loc, col_loc, history_msg)
@@ -451,11 +471,13 @@ class BattleshipsAPI(remote.Service):
             game.put()
             return StringMessage(message='The game is over! {0} has won the match!'.
                                  format(game.user_1.get().name))
+
         if winner_p2:
             game.end_game(game.user_2)
             game.put()
             return StringMessage(message='The game is over! {0} has won the match!'.
                                  format(game.user_2))
+
         else:
             # Send reminder email
             taskqueue.add(url='/tasks/send_move_email',
@@ -468,11 +490,13 @@ class BattleshipsAPI(remote.Service):
 
         target_hit_msg = 'You hit a ship! Well done!'
         target_miss_msg = 'No ship hit! Better luck next time!'
+
         # create a message to notify the player that they hit or missed.
         ret_msg = ("{0} You have now made the following moves: {1}. "
                         "{2} is up next!".format(target_hit_msg if target_hit else target_miss_msg,
                                                 game.history['grid_2' if user_1 else 'grid_1'],
                                                 game.next_move.get().name))
+        
         game.put()
         return StringMessage(message=ret_msg)
 
