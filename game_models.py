@@ -3,7 +3,27 @@ from google.appengine.ext import ndb
 
 
 class Game(ndb.Model):
-    """Game object"""
+    """Game object for storing each game within the database.
+    Attributes:
+        grid_1: A 2-D list representing user 1's 100 square grid. Stored as an
+            NDB PickleProperty.
+        grid_2: A 2-D list representing user 2's 100 square grid. Stored as an
+            NDB PickleProperty.
+        ships_1: A Python dict of the current ships on grid 1. NDB PickleProperty.
+        ships_2: A Python dict of the current ships on grid 2. NDB PickleProperty.
+        loc_ships_1: A python dict with the locations of current ships throughout grid 1, 
+            stored as an NDB PickleProperty.
+        loc_ships_2: A python dict with the locations of current ships throughout grid 2,
+            stored as an NDB PickleProperty.
+        next_move: The username who is to make a move next.
+        user_1: The key corresponding to user 1's User key.
+        user_2: The key corresponding to user 2's User key.
+        game_over: Boolean True if the game is over, False if still in progress.
+        winner: Stores the key corresponding to the winners User key when game ends.
+        history: A dict that stores the history of moves throughout the game for both
+            grid 1 and grid 2. Each grid is a dict key, and their values corresponding
+            to a sequence of tuples detailing the move, like so: [row, column, hit or miss]
+    """
     grid_1 = ndb.PickleProperty(required=True)
     grid_2 = ndb.PickleProperty(required=True)
     ships_1 = ndb.PickleProperty(required=True) # dict of user 1's current ships
@@ -19,7 +39,13 @@ class Game(ndb.Model):
 
     @classmethod
     def new_game(cls, user_1, user_2):
-        """Creates and returns a new game"""
+        """Creates and returns a new game using two input username args as strings.
+        Args:
+            user_1 (str): The username of user_1.
+            user_2 (str): The username of user_2.
+        Returns:
+            The created game object.
+        """
         game = Game(user_1=user_1,
                     user_2=user_2,
                     next_move=user_1)
@@ -44,7 +70,12 @@ class Game(ndb.Model):
         return game
 
     def total_ships(self, grid=1):
-        """Return the total number of ships on the selected BattleGrid instance."""
+        """Return the total number of ships on the selected BattleGrid instance.
+        Args:
+            grid: Set to either 1 or 2, to indicate which grid is selected. 1 by default.
+        Returns:
+            An integer corresponding to the sum of the number of ships currently on the grid.
+        """
         if grid is 1:
             # Sum of the ships dict values.
             return sum(self.ships_1.values())
@@ -52,46 +83,67 @@ class Game(ndb.Model):
             return sum(self.ships_2.values())
 
     def total_ship_cells(self, grid=1):
-        """Returns the number of cells still intact with '+'"""
+        """Returns the number of cells still intact with '+' as an integer.
+        Args:
+            grid: Set to either 1 or 2, to indicate which grid is selected. 1 by default.
+        Returns:
+            An integer corresponding to the total ship cells on the selected grid.
+        """
+        # set a ship cell counter to zero as default.
         ship_count = 0
-        if grid is 1:
-            for row in self.grid_1:
-                ship_count += row.count('+')
-        else:
-            for row in self.grid_2:
-                ship_count += row.count('+')
+        # set the ship grid accordingly.
+        ship_grid = "grid_1" if grid == 1 else 'grid_2'
+        # count the number of '+'s within each row.
+        for row in getattr(self, ship_grid):
+            ship_count += row.count('+')
         return ship_count
 
-    def total_destroyed_cells(self):
-        """Returns the total number of cells that are destroyed ('X')"""
+    def total_destroyed_cells(self, grid=1):
+        """Returns the total number of cells that are destroyed ('X') as an integer.
+        Args:
+            grid: Set to either 1 or 2, to indicate which grid is selected. 1 by default.
+        Returns:
+            An integer corresponding to the number of destroyed cells in the selected grid.
+        """
+        # set the ship grid from the grid arg.
+        ship_grid = "grid_1" if grid == 1 else 'grid_2'
         destroy_count = 0 
-        for row in self.board:
+        for row in getattr(self, ship_grid):
             destroy_count += row.count('X')
         return destroy_count
 
-    def destroyed_locations(self):
+    def destroyed_locations(self, grid=1):
         """Returns the locations of cells that are destroyed as a sequence
             of tuples containing their locations in the format:
             (row_number, column_number)
+        Args:
+            grid: Set to either 1 or 2, to indicate which grid is selected. 1 by default.
+        Returns:
+            A sequence of tuples that indicate the destroyed locations on the chosen grid, in the
+            format: [(row_number, column_number), ..]
         """
+        ship_grid = "grid_1" if grid == 1 else 'grid_2'
         row_loc, col_loc = [], []
-        for row_num, row in enumerate(self.board):
+        for row_num, row in enumerate(getattr(self, ship_grid)):
             for col_num, i in enumerate(row):
                 if i == 'X':
-                    # print "found an 'X' at location: row {0}, col {1}".format(row_num, col_num)
                     row_loc.append(row_num)
                     col_loc.append(col_num)
         locations = [list(x) for x in zip(row_loc, col_loc)]
         return locations
 
     def insert_user_ships(self, ships_dict_array, user='user_1'):
-        """Places user 1's ships throughout grid 1 within the
-           selected cell co-ordinates and orientation (vert or horizontal).
-           ships_array must be a dictionary with array values, providing the ships row,
-           column and its orientation, in the format like the following example:
-           ships_dict_array = {'Aircraft Carrier' : [2, 3, 'vertical=True']
-                               'Battleship' : [4, 5, 'False']}
-           The relevant data is passed forward into the place_ship function.
+        """Places user 1's ships throughout grid 1 within the selected cell co-ordinates 
+            and orientation (vert or horizontal). The relevant data is passed forward 
+            into the class function place_ship.
+        Args:
+            ships_dict_array (dict): a python dictionary with keys corresponding to 
+                battleship ship types, and values in the form of a list with values
+                providing the ships row, column and orientation, in the format:
+                {'ship_type' : [row, col, vertical=True/False]}
+            user: Should be equal to either 'user_1' or 'user_2'. 'user_1' by default.
+        Raises:
+            ValueError: the dict key does not match a valid ship type.
         """
         ship_grid = "ships_2" if user == 'user_2' else 'ships_1'
         grid = 2 if user == 'user_2' else 1
@@ -119,11 +171,17 @@ class Game(ndb.Model):
         return
 
     def place_ship(self, ship_type, size, first_row_int, first_col_int, vertical=True, grid=1):
-        """Places a ship of chosen size into the grid at the chosen co-ordinates,
-        by default, the ship is placed vertically, with the given co-ords
-        being the uppermost cell.
-        If vertical=False, the ship is placed horizontally, starting from the
-        left-most co-ordinates.
+        """Places a ship of chosen size into the grid at the chosen co-ordinates.
+            by default, the ship is placed vertically (vertical=True), with the given co-ords being the 
+            uppermost cell.
+        Args:
+            ship_type (str): string corresponding to the type of ship. Must be a valid ship.
+            size (int): Size of the ship, as an integer.
+            first_row_int (int): Integer corresponding to the first row of the ship.
+            first_col_int (int): Integer corresponding to the first column of the ship.
+            vertical (Boolean): Boolean True for vertical, False for horizontal. If horizontal, the ship
+                starting point is the left-most co-ordinate, and expands out to the right.
+            grid (int): The grid the ship is to be placed into, either 1 or 2. 1 by default.
         """
         if vertical == True:
             for row in range(first_row_int, first_row_int+size):
@@ -141,7 +199,15 @@ class Game(ndb.Model):
 
     def update_ship_loc_values(self, ship_type, row_int, col_int, grid=1, remove=False):
         """Updates the values of locations within loc_ships_1 or loc_ships_2.
-           If a ship has been hit, the remove arg should be set to True.
+            If a ship has been hit, the remove arg should be set to True.
+        Args: 
+            ship_type (str): the type of ship, as a string.
+            row_int (int): The row of the grid cell as an integer.
+            col_int (int): The column of the grid cell as an integer.
+            remove (Boolean): Set to True if ship locations are to be removed, else False
+                by default.
+        Raises:
+            ValueError: incorrect co-ordinates, grid or ship type.
         """ 
         if not remove:
             if grid == 1:
@@ -186,9 +252,18 @@ class Game(ndb.Model):
                 raise ValueError("The ship type is always 'unknown' during removal.")
 
     def update_cell(self, row_int, col_int, status="ship", grid=1):
-        """Update a cell at the chosen co-ordinates on the grid,
-        Status may be: - "ship" (places a '+' on the cell)
-                       - "destroy" (places an 'X' on the cell)
+        """Update a cell at the chosen co-ordinates on the grid with either a 
+            ship ('+') or a destroy signal ('X'). Raises an exception if incorrect
+            data is provided.
+        Args:
+            row_int (int): the row of the chosen cell, as an integer.
+            col_int (int): the column of the chosen cell, as an integer.
+            status: Set to 'ship' to place a '+' on the cell by default. If a cell is 
+                to be destroyed, status should be equal to 'destroy' to place an 'X'
+                on the cell.
+            grid (int): The grid number corresponding to the selected grid. 1 (default) or 2.
+        Raises:
+            ValueError: grid already destroyed, incorrect status or incorrect grid.
         """
         if grid == 1:
             if status == "ship":
@@ -225,8 +300,16 @@ class Game(ndb.Model):
             raise ValueError("The selected grid must be either 1 or 2!")
 
     def destroy_cell(self, row_int, col_int, grid=1):
-        """Destroys a selected grid cell, by inserting an "X".
-        Returns True if a ship was present at the selected cell.
+        """Destroys a selected grid cell, by inserting an "X". Returns True if a ship
+            was present at the selected cell.
+        Args:
+            row_int (int): the row of the chosen cell, as an integer.
+            col_int (int): the column of the chosen cell, as an integer.
+            grid (int): The grid number corresponding to the selected grid. 1 (default) or 2.
+        Returns:
+            a retval, which is True if a ship cell was destroyed, and False if not.
+        Raises:
+            ValueError: chosen cell already destroyed.
         """
         retval = False
         status = self.return_grid_status(row_int, col_int, grid=grid)
@@ -248,10 +331,15 @@ class Game(ndb.Model):
             raise ValueError('The chosen cell is already destroyed!')
 
     def return_grid_status(self, row_int, col_int, grid=1):
-        """Return the status of a chosen grid cell,
-        Returns: '-' for unoccupied,
-        '+' for occupied by a ship,
-        'x' for a destroyed cell.
+        """Return the status of a chosen grid cell as either unoccupied, destroyed or
+            occupied by a ship.
+        Args:
+            row_int (int): the row of the chosen cell, as an integer.
+            col_int (int): the column of the chosen cell, as an integer.
+            grid (int): The grid number corresponding to the selected grid. 1 (default) or 2.
+        Returns:
+            '+' if the cell is occupied by a ship, and 'X' if a cell is destroyed, and
+            '-' if a cell is unoccupied.
         """
         if grid is 1:
             return self.grid_1[row_int][col_int]
@@ -261,6 +349,13 @@ class Game(ndb.Model):
     def check_winner(self):
         """Check both battle grids. If there is a winner, report that user_win as True.
            Returns two values: user_1_win and user_2_win.
+        Returns:
+            A tuple that contains two Boolean values: user_1_win and user_2_win. If there
+            is no winner and the game is still in progress, both values will equal False. 
+            If there is a winner, that user's value (user_1_win or user_2_win) will be 
+            equal to True.
+        Example:
+            If user 1 had won the game, the function would return: (True, False)
         """
         # Check both grids total ship cells remaining.
         ship_cells_1 = self.total_ship_cells(grid=1)
@@ -280,7 +375,11 @@ class Game(ndb.Model):
         return (user_1_win, user_2_win)
 
     def to_form(self):
-        """Returns a GameForm representation of the Game"""
+        """Returns a GameForm representation of the Game.
+        Returns:
+            A GameForm message that contains all of the game entities properties 
+            in a suitable format for an outbound message.
+        """
         form = GameForm(urlsafe_key=self.key.urlsafe(),
                         grid_1 = str(self.grid_1),
                         grid_2 = str(self.grid_2),
@@ -297,7 +396,11 @@ class Game(ndb.Model):
         return form
 
     def end_game(self, winner):
-        """Ends the game"""
+        """Ends the game using the winners username (str) as an argument. Sets the 
+        current games property game_over to True, to indicate the game is over.
+        Args:
+            winner (str): The username of the winner.
+        """
         self.winner = winner
         self.game_over = True
         self.put()
@@ -312,7 +415,21 @@ class Game(ndb.Model):
 
 
 class GameForm(messages.Message):
-    """GameForm for outbound game state information"""
+    """GameForm for outbound game state information.
+    Attributes:
+        urlsafe_key: A urlsafe string representation of the Game entity key.
+        grid_1: A string representation of user 1's grid state.
+        grid_2: A string representation of user 2's grid state.
+        ships_1: A string representation of ships_1 dictionary.
+        ships_2: A string representation of ships_2 dictionary.
+        loc_ships_1: A string representation of loc_ships_1 dictionary.
+        loc_ships_2: A string representation of loc_ships_2 dictionary.
+        user_1: The name of user 1, as a string.
+        user_2: The name of user 2, as a string.
+        next_move: The name of the next player to take a turn, as a string.
+        game_over: True if the game is over, else False.
+        winner: The name of the winner, if the game is over.
+    """
     urlsafe_key = messages.StringField(1, required=True)
     grid_1 = messages.StringField(2, required=True)
     grid_2 = messages.StringField(3, required=True)
@@ -328,11 +445,18 @@ class GameForm(messages.Message):
 
 
 class GameForms(messages.Message):
-    """Container for multiple GameForm"""
+    """Container for multiple GameForm.
+    Attributes:
+        items: The GameForm messages, as a repeated property.
+    """
     items = messages.MessageField(GameForm, 1, repeated=True)
 
 
 class NewGameForm(messages.Message):
-    """Used to create a new game"""
+    """Used to create a new game using two selected user names.
+    Attributes:
+        user_1: The selected username for user 1 as a string.
+        user_2: The selected username for user 2 as a string.
+    """
     user_1 = messages.StringField(1, required=True)
     user_2 = messages.StringField(2, required=True)
