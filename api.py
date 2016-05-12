@@ -468,7 +468,7 @@ class BattleshipsAPI(remote.Service):
             game.end_game(game.user_2)
             game.put()
             return StringMessage(message='The game is over! {0} has won the match!'.
-                                 format(game.user_2))
+                                 format(game.user_2.get().name))
 
         else:
             # Send reminder email

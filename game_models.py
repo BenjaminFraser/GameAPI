@@ -1,6 +1,12 @@
 #!/usr/bin/env python
+# This contains the Game model classes and GameForm message classes for use
+# with the Battleships API.  
+from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
+from models import User, Score
+from models import StringMessage, MakeMoveForm, \
+    ScoreForms, UserForm, UserForms, InsertShipsForms
 
 
 class Game(ndb.Model):

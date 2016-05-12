@@ -22,7 +22,8 @@ from google.appengine.ext import ndb
 from api import BattleshipsAPI
 from utils import get_by_urlsafe
 
-from models import User, Game
+from models import User
+from game_models import Game
 
 
 class SendReminderEmail(webapp2.RequestHandler):

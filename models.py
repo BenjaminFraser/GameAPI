@@ -1,4 +1,3 @@
-from datetime import date
 from protorpc import messages
 from google.appengine.ext import ndb
 
