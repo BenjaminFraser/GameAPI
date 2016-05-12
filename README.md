@@ -100,7 +100,7 @@ all of the opponents ships first is the winner of the match.
 
 - **insert_user_1_ships**
     - Path: 'game/{urlsafe_game_key}/user_1_ships'
-    - Method: POST
+    - Method: PUT
     - Parameters: urlsafe_game_key, insert ship data forms.
     - Returns: Message confirming the ship insertion.
     - Description: Inserts initial ships into the grid 1 battlegrid, prior to a 
@@ -110,7 +110,7 @@ all of the opponents ships first is the winner of the match.
 
 - **insert_user_2_ships**
     - Path: 'game/{urlsafe_game_key}/user_2_ships'
-    - Method: POST
+    - Method: PUT
     - Parameters: urlsafe_game_key, insert ship data forms.
     - Returns: Message confirming the ship insertion.
     - Description: Inserts initial ships into the grid 2 battlegrid, prior to a 
@@ -153,7 +153,7 @@ all of the opponents ships first is the winner of the match.
     
  - **get_game_attacks**
     - Path: 'game/{urlsafe_game_key}/attacks'
-    - Method: POST
+    - Method: GET
     - Parameters: user_number
     - Returns: StringMessage
     - Description: Return a Game's grid attacks for both player 1 and player 2.
@@ -190,10 +190,10 @@ all of the opponents ships first is the winner of the match.
     
 ## Forms Included:
  - **GameForm**
-    - Representation of a Game's state (urlsafe_key, board,
-    user_x, user_o, game_over, winner).
+    - Representation of a Game's state (urlsafe_key, grid_1, grid_2,
+    user_1, user_2, game_over, winner).
  - **NewGameForm**
-    - Used to create a new game (user_x, user_o)
+    - Used to create a new game (user_1, user_2)
 - **InsertShipsForm**
     - Used to insert a specified ship type into a battlegrid.
 - **InsertShipsForms**
@@ -263,7 +263,7 @@ all of the opponents ships first is the winner of the match.
 
  - **get_game_attacks**
     - Path: 'game/{urlsafe_game_key}/attacks'
-    - Method: POST
+    - Method: GET
     - Parameters: user_number
     - Returns: StringMessage
     - Description: Return a Game's grid attacks for both player 1 and player 2.
