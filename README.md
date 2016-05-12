@@ -160,7 +160,7 @@ all of the opponents ships first is the winner of the match.
 
 - **get_ships_remaining**
     - Path: 'games/ships_remaining'
-    - Mathod: GET
+    - Method: GET
     - Parameters: None
     - Returns: StringMessage
     - Description: Get the cached ships remaining for each current game in progress.
@@ -180,7 +180,7 @@ all of the opponents ships first is the winner of the match.
     dictionaries for each user. `ships` stores the number of ships currently on the
     users battlegrid, whilst loc_ships dict stores the associated locations of these ships 
     using an array of tuples.
-    - Contains many class methods for game functionalities, including total ship counts, insertion of ships, updating grid values and checking for a winner. 
+    - Contains many class methods for game functionality, including total ship counts, insertion of ships, updating grid values and checking for a winner.
 
  - **Score**
     - Records completed games. Associated with Users model via KeyProperty as
@@ -270,7 +270,7 @@ all of the opponents ships first is the winner of the match.
 
 - **get_ships_remaining**
     - Path: 'games/ships_remaining'
-    - Mathod: GET
+    - Method: GET
     - Parameters: None
     - Returns: StringMessage
     - Description: Get the cached ships remaining for each current game in progress. This is carried out each time a player makes a game move within any game.

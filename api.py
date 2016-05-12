@@ -5,36 +5,36 @@ from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
 from models import User, Score
-from models import StringMessage, MakeMoveForm,\
+from models import StringMessage, MakeMoveForm, \
     ScoreForms, UserForm, UserForms, InsertShipsForms
 from game_models import Game, GameForm, GameForms, NewGameForm
 from utils import get_by_urlsafe
 
 # Fields for conference query options.
 SHIP_TYPES = [
-            'aircraft carrier',
-            'battleship',
-            'submarine',
-            'destroyer',
-            'patrol boat'
-            ]
+    'aircraft carrier',
+    'battleship',
+    'submarine',
+    'destroyer',
+    'patrol boat'
+]
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
 
 GET_GAME_REQUEST = endpoints.ResourceContainer(
-    urlsafe_game_key=messages.StringField(1),)
+    urlsafe_game_key=messages.StringField(1), )
 
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(
     MakeMoveForm,
-    urlsafe_game_key=messages.StringField(1),)
+    urlsafe_game_key=messages.StringField(1), )
 
 GRID_ATTACKS_REQUEST = endpoints.ResourceContainer(
     user_number=messages.StringField(1),
-    urlsafe_game_key=messages.StringField(2),)
+    urlsafe_game_key=messages.StringField(2), )
 
 INSERT_SHIPS_REQUEST = endpoints.ResourceContainer(
     InsertShipsForms,
-    urlsafe_game_key=messages.StringField(1),)
+    urlsafe_game_key=messages.StringField(1), )
 
 USER_REQUEST = endpoints.ResourceContainer(
     user_name=messages.StringField(1),
@@ -46,6 +46,7 @@ MEMCACHE_USER_SHIPS_REMAINING = 'SHIPS_REMAINING'
 @endpoints.api(name='battleships', version='v1')
 class BattleshipsAPI(remote.Service):
     """Game API"""
+
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=StringMessage,
                       path='user',
@@ -64,12 +65,11 @@ class BattleshipsAPI(remote.Service):
         """
         if User.query(User.name == request.user_name).get():
             raise endpoints.ConflictException(
-                    'A User with that name already exists!')
+                'A User with that name already exists!')
         user = User(name=request.user_name, email=request.email)
         user.put()
         return StringMessage(message='User {} created!'.format(
-                request.user_name))
-
+            request.user_name))
 
     @endpoints.method(response_message=UserForms,
                       path='user/ranking',
@@ -85,7 +85,6 @@ class BattleshipsAPI(remote.Service):
         users = User.query(User.total_played > 0).fetch()
         users = sorted(users, key=lambda x: x.win_percentage, reverse=True)
         return UserForms(items=[user.to_form() for user in users])
-
 
     @endpoints.method(request_message=NEW_GAME_REQUEST,
                       response_message=GameForm,
@@ -109,12 +108,11 @@ class BattleshipsAPI(remote.Service):
         user_2 = User.query(User.name == request.user_2).get()
         if not user_1 and user_2:
             raise endpoints.NotFoundException(
-                    'One of users with that name does not exist!')
+                'One of users with that name does not exist!')
 
         game = Game.new_game(user_1.key, user_2.key)
 
         return game.to_form()
-
 
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
                       response_message=StringMessage,
@@ -124,7 +122,7 @@ class BattleshipsAPI(remote.Service):
     def insert_user_1_ships(self, request):
         """Inserts user 1 ships into the Game entity grid 1 field. Takes in multiple
             Message objects through a GameForms request object. Makes use of the
-            _formatShipInserts(ships) and game class insert_user_ships(ships) methods. 
+            _format_ship_inserts(ships) and game class insert_user_ships(ships) methods.
             Raises an exception if no game is found, a player has already inserted ships
             or the ship insert data is invalid.
         Args:
@@ -143,7 +141,7 @@ class BattleshipsAPI(remote.Service):
             if game.total_ship_cells(grid=1) == 0:
                 # check validity of input ship data. Insert into game if valid.
                 try:
-                    ship_data = self._formatShipInserts(request.ships)
+                    ship_data = self._format_ship_inserts(request.ships)
                     game.insert_user_ships(ship_data)
                     game.put()
                 # raise exception with error message if the data is not valid.
@@ -156,7 +154,6 @@ class BattleshipsAPI(remote.Service):
         else:
             raise endpoints.NotFoundException('Game not found!')
 
-
     @endpoints.method(request_message=INSERT_SHIPS_REQUEST,
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}/user_2_ships',
@@ -165,7 +162,7 @@ class BattleshipsAPI(remote.Service):
     def insert_user_2_ships(self, request):
         """Inserts user 2 ships into the Game entity grid 2 field. Takes in multiple
             Message objects through a GameForms request object. Makes use of the
-            _formatShipInserts(ships) and game class insert_user_ships(ships) methods. 
+            _format_ship_inserts(ships) and game class insert_user_ships(ships) methods.
             Raises an exception if no game is found, a player has already inserted ships
             or the ship insert data is invalid.
         Args:
@@ -179,12 +176,12 @@ class BattleshipsAPI(remote.Service):
         """
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         # check game exists.
-        if game:   
+        if game:
             # ensure ships haven't already been added.
             if game.total_ship_cells(grid=2) == 0:
                 # check validity of input ship data. Insert into game if valid.
                 try:
-                    ship_data = self._formatShipInserts(request.ships)
+                    ship_data = self._format_ship_inserts(request.ships)
                     game.insert_user_ships(ship_data, user='user_2')
                     game.put()
                 # raise exception with error message if the data is not valid.
@@ -197,8 +194,7 @@ class BattleshipsAPI(remote.Service):
         else:
             raise endpoints.NotFoundException('Game not found!')
 
-
-    def _formatShipInserts(self, ships):
+    def _format_ship_inserts(self, ships):
         """Parse, check validity and format ship insert data into an appropriate dict.
             Raises an exception if the ship type within the ships dict is incorrect, or
             if the position data within the dict is invalid.
@@ -224,26 +220,26 @@ class BattleshipsAPI(remote.Service):
 
             if ship_type not in SHIP_TYPES:
                 raise ValueError("Please enter a valid ship type. '{0}' is not valid! "
-                                "A ship can be one of either: aircraft carrier, battleship, "
+                                 "A ship can be one of either: aircraft carrier, battleship, "
                                  "submarine, destroyer or a patrol boat!".format(ship_type))
             # ensure more than one ship type is not being inserted into the grid.
 
             if ship_type in formatted_ships:
                 raise endpoints.BadRequestException('More than one ship type cannot be inserted! '
-                            'You have tried to insert more than one {0}!'.format(ship_type))
+                                                    'You have tried to insert more than one {0}!'.format(ship_type))
 
             start_row, start_col = int(ship_data['start_row']), int(ship_data['start_column'])
             # check whether orientation is horizontal or vertical.
             if ship_data['orientation'].lower().startswith('h'):
                 vertical = False
 
-            else: 
+            else:
                 # default to vertical orientation if horizontal not given.
                 vertical = True
 
-            # check the validity of the given ship data using _shipInsertPosnValid helper.
-            check_ship, msg = self._shipInsertPosnValid(ship_type, start_row, 
-                                                        start_col, vertical)
+            # check the validity of the given ship data using _ship_insert_posn_valid helper.
+            check_ship, msg = self._ship_insert_posn_valid(ship_type, start_row,
+                                                           start_col, vertical)
 
             # format the ship dict as appropriate if the ship data is valid.
             if check_ship:
@@ -254,8 +250,7 @@ class BattleshipsAPI(remote.Service):
 
         return formatted_ships
 
-
-    def _shipInsertPosnValid(self, ship_type, first_row_int, first_col_int, vertical=True):
+    def _ship_insert_posn_valid(self, ship_type, first_row_int, first_col_int, vertical=True):
         """Checks the validatity of the ships starting co-ordinates and characteristics.
            Returns a tuple, consisting of a retval and a message. retval is True to indicate
            valid position data, and is false when not, along with a message indicating why.
@@ -289,11 +284,11 @@ class BattleshipsAPI(remote.Service):
         else:
             retval = False
             message = ("The input ship type {0} is not valid! Please use either "
-                        "'aircraft carrier', 'battleship', 'submarine', 'destroyer' or "
-                        "'patrol boat'!".format(ship_type))
+                       "'aircraft carrier', 'battleship', 'submarine', 'destroyer' or "
+                       "'patrol boat'!".format(ship_type))
             return retval, message
 
-        if vertical == True:
+        if vertical:
             # verify that the ship will fit into the battle grid based on input.
             if int(first_row_int) < limit:
                 retval, message = True, None
@@ -304,7 +299,7 @@ class BattleshipsAPI(remote.Service):
                 message = "{0} is size {1} and cannot fit there!".format(ship_type, size)
                 return retval, message
 
-        elif vertical == False:
+        elif not vertical:
             # verify that horizontal location is within the grid limits.
             if int(first_col_int) < limit:
                 retval, message = True, None
@@ -318,7 +313,6 @@ class BattleshipsAPI(remote.Service):
         else:
             # raise exception for incorrect vertical keyword if not true or false.
             raise ValueError("The 'vertical' keyword must be True or False!")
-
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=GameForm,
@@ -361,10 +355,9 @@ class BattleshipsAPI(remote.Service):
         if not user:
             raise endpoints.BadRequestException('User not found!')
         games = Game.query(ndb.OR(Game.user_1 == user.key,
-                                  Game.user_2 == user.key)).\
+                                  Game.user_2 == user.key)). \
             filter(Game.game_over == False)
         return GameForms(items=[game.to_form() for game in games])
-
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
@@ -395,7 +388,6 @@ class BattleshipsAPI(remote.Service):
 
         else:
             raise endpoints.NotFoundException('Game not found!')
-
 
     @endpoints.method(request_message=MAKE_MOVE_REQUEST,
                       response_message=StringMessage,
@@ -481,8 +473,7 @@ class BattleshipsAPI(remote.Service):
         else:
             # Send reminder email
             taskqueue.add(url='/tasks/send_move_email',
-                          params={'user_key': game.next_move.urlsafe(),
-                                   'game_key': game.key.urlsafe()})
+                          params=dict(user_key=game.next_move.urlsafe(), game_key=game.key.urlsafe()))
 
             # update memcache with user ships remaining
             taskqueue.add(url='/tasks/cache_ships_remaining',
@@ -493,13 +484,12 @@ class BattleshipsAPI(remote.Service):
 
         # create a message to notify the player that they hit or missed.
         ret_msg = ("{0} You have now made the following moves: {1}. "
-                        "{2} is up next!".format(target_hit_msg if target_hit else target_miss_msg,
-                                                game.history['grid_2' if user_1 else 'grid_1'],
-                                                game.next_move.get().name))
-        
+                   "{2} is up next!".format(target_hit_msg if target_hit else target_miss_msg,
+                                            game.history['grid_2' if user_1 else 'grid_1'],
+                                            game.next_move.get().name))
+
         game.put()
         return StringMessage(message=ret_msg)
-
 
     @endpoints.method(request_message=GET_GAME_REQUEST,
                       response_message=StringMessage,
@@ -522,7 +512,6 @@ class BattleshipsAPI(remote.Service):
         if not game:
             raise endpoints.NotFoundException('Game not found')
         return StringMessage(message=str(game.history))
-
 
     @endpoints.method(request_message=GRID_ATTACKS_REQUEST,
                       response_message=StringMessage,
@@ -555,7 +544,6 @@ class BattleshipsAPI(remote.Service):
         msg = ("The enemy grid is currently like so: {0}".format(shipfree_grid))
         return StringMessage(message=msg)
 
-
     @endpoints.method(response_message=ScoreForms,
                       path='scores',
                       name='get_scores',
@@ -569,7 +557,6 @@ class BattleshipsAPI(remote.Service):
             ScoreForms object, containing the individual score records from Datastore
         """
         return ScoreForms(items=[score.to_form() for score in Score.query()])
-
 
     @endpoints.method(request_message=USER_REQUEST,
                       response_message=ScoreForms,
@@ -588,11 +575,10 @@ class BattleshipsAPI(remote.Service):
         user = User.query(User.name == request.user_name).get()
         if not user:
             raise endpoints.NotFoundException(
-                    'A User with that name does not exist!')
+                'A User with that name does not exist!')
         scores = Score.query(ndb.OR(Score.winner == user.key,
                                     Score.loser == user.key))
         return ScoreForms(items=[score.to_form() for score in scores])
-
 
     @endpoints.method(response_message=StringMessage,
                       path='games/ships_remaining',
@@ -608,7 +594,6 @@ class BattleshipsAPI(remote.Service):
         """
         return StringMessage(message=memcache.get(MEMCACHE_USER_SHIPS_REMAINING) or '')
 
-
     @staticmethod
     def _cache_ships_remaining():
         """Populates memcache with the number of ships remaining for both users
@@ -622,7 +607,7 @@ class BattleshipsAPI(remote.Service):
                 ships_1, ships_2 = game.total_ships(grid=1), game.total_ships(grid=2)
                 user_1, user_2 = game.user_1.get().name, game.user_2.get().name
                 msg = ("Game key {0}, user 1 is {1} with {2} ships, user 2 is {3} "
-                        "with {4} ships.".format(websafe_game_key, user_1, ships_1, user_2, ships_2))
+                       "with {4} ships.".format(websafe_game_key, user_1, ships_1, user_2, ships_2))
                 ship_game_data.append(msg)
             memcache.set(MEMCACHE_USER_SHIPS_REMAINING,
                          'The current games in progress, along with the number of ships '

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from protorpc import messages
 from google.appengine.ext import ndb
 
@@ -26,11 +27,11 @@ class Game(ndb.Model):
     """
     grid_1 = ndb.PickleProperty(required=True)
     grid_2 = ndb.PickleProperty(required=True)
-    ships_1 = ndb.PickleProperty(required=True) # dict of user 1's current ships
-    ships_2 = ndb.PickleProperty(required=True) 
-    loc_ships_1 = ndb.PickleProperty(required=True) # locations of user 1's ships
+    ships_1 = ndb.PickleProperty(required=True)  # dict of user 1's current ships
+    ships_2 = ndb.PickleProperty(required=True)
+    loc_ships_1 = ndb.PickleProperty(required=True)  # locations of user 1's ships
     loc_ships_2 = ndb.PickleProperty(required=True)
-    next_move = ndb.KeyProperty(required=True) # The User's whose turn it is
+    next_move = ndb.KeyProperty(required=True)  # The User's whose turn it is
     user_1 = ndb.KeyProperty(required=True, kind='User')
     user_2 = ndb.KeyProperty(required=True, kind='User')
     game_over = ndb.BooleanProperty(required=True, default=False)
@@ -55,17 +56,17 @@ class Game(ndb.Model):
         new_board = [['-' for row in rows] for col in columns]
         game.grid_1 = game.grid_2 = new_board
         # create a dict object with default 0 ships of each type.
-        empty_ships = { 'aircraft carrier' : 0, 'battleship' : 0,
-                        'submarine' : 0, 'destroyer' : 0,
-                        'patrol boat' : 0 }
+        empty_ships = {'aircraft carrier': 0, 'battleship': 0,
+                       'submarine': 0, 'destroyer': 0,
+                       'patrol boat': 0}
         # set user 1 and user 2 ships to the default
         game.ships_1 = game.ships_2 = empty_ships
-        empty_locs = { 'aircraft carrier' : [], 'battleship' : [],
-                        'submarine' : [], 'destroyer' : [],
-                        'patrol boat' : [] }
+        empty_locs = {'aircraft carrier': [], 'battleship': [],
+                      'submarine': [], 'destroyer': [],
+                      'patrol boat': []}
         game.loc_ships_1 = game.loc_ships_2 = empty_locs
         # Set initial empty history dict for game.
-        game.history = {'grid_1' : [], 'grid_2' : []}
+        game.history = {'grid_1': [], 'grid_2': []}
         game.put()
         return game
 
@@ -107,7 +108,7 @@ class Game(ndb.Model):
         """
         # set the ship grid from the grid arg.
         ship_grid = "grid_1" if grid == 1 else 'grid_2'
-        destroy_count = 0 
+        destroy_count = 0
         for row in getattr(self, ship_grid):
             destroy_count += row.count('X')
         return destroy_count
@@ -147,7 +148,7 @@ class Game(ndb.Model):
         """
         ship_grid = "ships_2" if user == 'user_2' else 'ships_1'
         grid = 2 if user == 'user_2' else 1
-            # iterate through dict object using iteritems()
+        # iterate through dict object using iteritems()
         for ship, data in ships_dict_array.iteritems():
             if ship == 'aircraft carrier':
                 # place ship object onto the grid dependent on inputs.
@@ -183,15 +184,15 @@ class Game(ndb.Model):
                 starting point is the left-most co-ordinate, and expands out to the right.
             grid (int): The grid the ship is to be placed into, either 1 or 2. 1 by default.
         """
-        if vertical == True:
-            for row in range(first_row_int, first_row_int+size):
+        if vertical:
+            for row in range(first_row_int, first_row_int + size):
                 self.update_cell(row, first_col_int, grid=grid)
                 # Add the ship locations to the relevant loc_ships dict
                 self.update_ship_loc_values(ship_type, row, first_col_int, grid=grid)
             return
-                                
-        if vertical == False:
-            for col in range(first_col_int, first_col_int+size):
+
+        if not vertical:
+            for col in range(first_col_int, first_col_int + size):
                 self.update_cell(first_row_int, col, grid=grid)
                 # Add the ship locations to the relevant loc_ships dict
                 self.update_ship_loc_values(ship_type, first_row_int, col, grid=grid)
@@ -204,11 +205,12 @@ class Game(ndb.Model):
             ship_type (str): the type of ship, as a string.
             row_int (int): The row of the grid cell as an integer.
             col_int (int): The column of the grid cell as an integer.
+            grid (int): The specified grid, either 1 or 2. 1 by default.
             remove (Boolean): Set to True if ship locations are to be removed, else False
                 by default.
         Raises:
             ValueError: incorrect co-ordinates, grid or ship type.
-        """ 
+        """
         if not remove:
             if grid == 1:
                 # append the cell co-ordinate to the relevant key of the loc dict.
@@ -232,8 +234,8 @@ class Game(ndb.Model):
                             # update the ships dict to indicate destruction of the ship.
                             self.ships_1[ship] -= 1
                         return
-                if found == False:
-                        raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
+                if not found:
+                    raise ValueError("Those co-ordinates are not in the ship loc 1 dict!")
 
             elif grid == 2 and ship_type == 'unknown':
                 found = False
@@ -245,8 +247,8 @@ class Game(ndb.Model):
                             # update the ships dict to indicate destruction of the ship.
                             self.ships_2[ship] -= 1
                         return
-                if found == False:
-                        raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
+                if not found:
+                    raise ValueError("Those co-ordinates are not in the ship loc 2 dict!")
 
             else:
                 raise ValueError("The ship type is always 'unknown' during removal.")
@@ -372,7 +374,7 @@ class Game(ndb.Model):
             # user 2 has lost the game. Report user 1 as winner by returning user_1 = True.
             user_2_win = True
 
-        return (user_1_win, user_2_win)
+        return user_1_win, user_2_win
 
     def to_form(self):
         """Returns a GameForm representation of the Game.
@@ -381,12 +383,12 @@ class Game(ndb.Model):
             in a suitable format for an outbound message.
         """
         form = GameForm(urlsafe_key=self.key.urlsafe(),
-                        grid_1 = str(self.grid_1),
-                        grid_2 = str(self.grid_2),
-                        ships_1 = str(self.ships_1),
-                        ships_2 = str(self.ships_2),
-                        loc_ships_1 = str(self.loc_ships_1),
-                        loc_ships_2 = str(self.loc_ships_2),
+                        grid_1=str(self.grid_1),
+                        grid_2=str(self.grid_2),
+                        ships_1=str(self.ships_1),
+                        ships_2=str(self.ships_2),
+                        loc_ships_1=str(self.loc_ships_1),
+                        loc_ships_2=str(self.loc_ships_2),
                         user_1=self.user_1.get().name,
                         user_2=self.user_2.get().name,
                         next_move=self.next_move.get().name,

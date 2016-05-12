@@ -35,12 +35,12 @@ class SendReminderEmail(webapp2.RequestHandler):
 
         for user in users:
             games = Game.query(ndb.OR(Game.user_1 == user.key,
-                                     Game.user_2 == user.key)).\
+                                      Game.user_2 == user.key)). \
                 filter(Game.game_over == False)
             if games.count() > 0:
                 subject = 'This is a reminder!'
                 body = 'Hello {}, you have {} games in progress. Their' \
-                       ' keys are: {}'.\
+                       ' keys are: {}'. \
                     format(user.name,
                            games.count(),
                            ', '.join(game.key.urlsafe() for game in games))
@@ -60,20 +60,21 @@ class UpdateGameShipsRemaining(webapp2.RequestHandler):
         BattleshipsAPI._cache_ships_remaining()
         self.response.set_status(204)
 
+
 class SendMoveEmail(webapp2.RequestHandler):
     def post(self):
         """Send an email to a User that it is their turn"""
         user = get_by_urlsafe(self.request.get('user_key'), User)
         game = get_by_urlsafe(self.request.get('game_key'), Game)
         subject = 'It\'s your turn!'
-        body = '{}, It\'s your turn to play Battleships! The game key is: {}'.\
-           format(user.name, game.key.urlsafe())
+        body = '{}, It\'s your turn to play Battleships! The game key is: {}'. \
+            format(user.name, game.key.urlsafe())
         logging.debug(body)
         mail.send_mail('noreply@{}.appspotmail.com'.
-                               format(app_identity.get_application_id()),
-                               user.email,
-                               subject,
-                               body)
+                       format(app_identity.get_application_id()),
+                       user.email,
+                       subject,
+                       body)
 
 
 app = webapp2.WSGIApplication([

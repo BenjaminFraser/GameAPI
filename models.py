@@ -24,7 +24,7 @@ class User(ndb.Model):
             else returns 0.
         """
         if self.total_played > 0:
-            return float(self.wins)/float(self.total_played)
+            return float(self.wins) / float(self.total_played)
         else:
             return 0
 
@@ -157,4 +157,3 @@ class UserForms(messages.Message):
         items: The UserForm messages, as a repeated property.
     """
     items = messages.MessageField(UserForm, 1, repeated=True)
-
