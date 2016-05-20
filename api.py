@@ -355,7 +355,7 @@ class BattleshipsAPI(remote.Service):
         if not user:
             raise endpoints.BadRequestException('User not found!')
         games = Game.query(ndb.OR(Game.user_1 == user.key,
-                                  Game.user_2 == user.key)). \
+                                  Game.user_2 == user.key)).\
             filter(Game.game_over == False)
         return GameForms(items=[game.to_form() for game in games])
 
